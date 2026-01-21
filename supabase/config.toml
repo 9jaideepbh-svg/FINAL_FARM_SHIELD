@@ -1,1 +1,4 @@
 project_id = "ijqdlyvpcmfurujlrxhn"
+
+[functions.diagnose-plant]
+verify_jwt = false

@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      diagnoses: {
+        Row: {
+          confidence_percentage: number | null
+          created_at: string
+          crop_name: string | null
+          diagnosis_date: string
+          diagnosis_details: Json | null
+          disease_name: string | null
+          id: string
+          image_url: string
+          is_healthy: boolean | null
+          prevention_tips: string[] | null
+          severity: string | null
+          treatment_recommendations: string[] | null
+          user_id: string
+        }
+        Insert: {
+          confidence_percentage?: number | null
+          created_at?: string
+          crop_name?: string | null
+          diagnosis_date?: string
+          diagnosis_details?: Json | null
+          disease_name?: string | null
+          id?: string
+          image_url: string
+          is_healthy?: boolean | null
+          prevention_tips?: string[] | null
+          severity?: string | null
+          treatment_recommendations?: string[] | null
+          user_id: string
+        }
+        Update: {
+          confidence_percentage?: number | null
+          created_at?: string
+          crop_name?: string | null
+          diagnosis_date?: string
+          diagnosis_details?: Json | null
+          disease_name?: string | null
+          id?: string
+          image_url?: string
+          is_healthy?: boolean | null
+          prevention_tips?: string[] | null
+          severity?: string | null
+          treatment_recommendations?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          farm_details: string | null
+          full_name: string | null
+          id: string
+          location: string | null
+          phone: string | null
+          preferred_language: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          farm_details?: string | null
+          full_name?: string | null
+          id?: string
+          location?: string | null
+          phone?: string | null
+          preferred_language?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          farm_details?: string | null
+          full_name?: string | null
+          id?: string
+          location?: string | null
+          phone?: string | null
+          preferred_language?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
