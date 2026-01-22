@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Diagnosis from "./pages/Diagnosis";
 import History from "./pages/History";
+import Schemes from "./pages/Schemes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/diagnosis" element={<Diagnosis />} />
             <Route path="/history" element={<History />} />
+            <Route path="/schemes" element={<Schemes />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
