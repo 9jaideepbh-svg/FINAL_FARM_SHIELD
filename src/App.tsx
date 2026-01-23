@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import Diagnosis from "./pages/Diagnosis";
 import History from "./pages/History";
 import Schemes from "./pages/Schemes";
+import Soil from "./pages/Soil";
+import Weather from "./pages/Weather";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
             <Route path="/diagnosis" element={<Diagnosis />} />
             <Route path="/history" element={<History />} />
             <Route path="/schemes" element={<Schemes />} />
+            <Route path="/soil" element={<Soil />} />
+            <Route path="/weather" element={<Weather />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

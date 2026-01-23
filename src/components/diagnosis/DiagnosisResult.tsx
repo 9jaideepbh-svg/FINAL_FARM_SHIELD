@@ -6,19 +6,55 @@ import {
   Calendar,
   TrendingUp,
   Shield,
-  Lightbulb
+  Lightbulb,
+  Package,
+  Beaker,
+  Clock,
+  Target,
+  ChevronDown,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface DiagnosisDetails {
   symptoms_observed?: string[];
   affected_parts?: string[];
   disease_stage?: string;
   pathogen_type?: string;
+}
+
+interface TreatmentRecommendation {
+  step: string;
+  estimated_yield_impact: string;
+  recovery_prediction: string;
+}
+
+interface RecommendedProduct {
+  name: string;
+  type: "organic" | "inorganic";
+  category: string;
+  dosage: string;
+  application_method: string;
+  frequency: string;
+  benefits: string[];
+  precautions: string[];
+}
+
+interface YieldImpactSummary {
+  without_treatment: string;
+  with_treatment: string;
+  treatment_window: string;
+}
+
+interface RecoveryPrediction {
+  timeline: string;
+  success_rate: string;
+  factors: string[];
 }
 
 interface DiagnosisResultProps {
@@ -28,11 +64,14 @@ interface DiagnosisResultProps {
   isHealthy: boolean;
   severity?: string | null;
   diagnosisDetails?: DiagnosisDetails;
-  treatmentRecommendations?: string[];
+  treatmentRecommendations?: TreatmentRecommendation[] | string[];
   preventionTips?: string[];
   diagnosisDate: string;
   lowConfidenceWarning?: boolean;
   imageUrl?: string;
+  recommendedProducts?: RecommendedProduct[];
+  yieldImpactSummary?: YieldImpactSummary;
+  recoveryPrediction?: RecoveryPrediction;
 }
 
 export function DiagnosisResult({
@@ -46,33 +85,43 @@ export function DiagnosisResult({
   preventionTips,
   diagnosisDate,
   lowConfidenceWarning,
-  imageUrl,
+  recommendedProducts,
+  yieldImpactSummary,
+  recoveryPrediction,
 }: DiagnosisResultProps) {
+  const [expandedProduct, setExpandedProduct] = useState<number | null>(null);
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "low":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success/20 text-success border-success/30";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-warning/20 text-warning border-warning/30";
       case "high":
         return "bg-orange-100 text-orange-800 border-orange-200";
       case "critical":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/20 text-destructive border-destructive/30";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "text-green-600";
-    if (confidence >= 60) return "text-yellow-600";
-    return "text-red-600";
+    if (confidence >= 80) return "text-success";
+    if (confidence >= 60) return "text-warning";
+    return "text-destructive";
   };
 
   const formattedDate = new Date(diagnosisDate).toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   });
+
+  // Check if treatment recommendations are in the new format (with yield impact)
+  const isEnhancedTreatment = treatmentRecommendations && 
+    treatmentRecommendations.length > 0 && 
+    typeof treatmentRecommendations[0] === 'object' &&
+    'step' in treatmentRecommendations[0];
 
   return (
     <div className="space-y-6">
@@ -195,6 +244,162 @@ export function DiagnosisResult({
         </CardContent>
       </Card>
 
+      {/* Yield Impact & Recovery Summary */}
+      {!isHealthy && (yieldImpactSummary || recoveryPrediction) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Yield Impact */}
+          {yieldImpactSummary && (
+            <Card className="border-orange-200 bg-orange-50/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Target className="h-5 w-5 text-orange-600" />
+                  Yield Impact
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Without Treatment</p>
+                  <p className="text-sm text-destructive font-medium">{yieldImpactSummary.without_treatment}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">With Treatment</p>
+                  <p className="text-sm text-success font-medium">{yieldImpactSummary.with_treatment}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Treatment Window</p>
+                  <p className="text-sm font-medium">{yieldImpactSummary.treatment_window}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recovery Prediction */}
+          {recoveryPrediction && (
+            <Card className="border-success/30 bg-success/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Clock className="h-5 w-5 text-success" />
+                  Recovery Prediction
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Timeline</p>
+                  <p className="text-sm font-medium">{recoveryPrediction.timeline}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Success Rate</p>
+                  <p className="text-sm font-medium text-success">{recoveryPrediction.success_rate}</p>
+                </div>
+                {recoveryPrediction.factors && recoveryPrediction.factors.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Key Factors</p>
+                    <ul className="text-sm">
+                      {recoveryPrediction.factors.map((factor, idx) => (
+                        <li key={idx} className="flex items-start gap-1">
+                          <span className="text-success">•</span>
+                          {factor}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Recommended Products */}
+      {recommendedProducts && recommendedProducts.length > 0 && !isHealthy && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Package className="h-5 w-5 text-primary" />
+              Recommended Products
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recommendedProducts.map((product, idx) => (
+              <Collapsible
+                key={idx}
+                open={expandedProduct === idx}
+                onOpenChange={() => setExpandedProduct(expandedProduct === idx ? null : idx)}
+              >
+                <div className="border rounded-lg overflow-hidden">
+                  <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Beaker className={cn(
+                        "h-5 w-5",
+                        product.type === "organic" ? "text-success" : "text-primary"
+                      )} />
+                      <div className="text-left">
+                        <p className="font-semibold">{product.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={product.type === "organic" ? "default" : "secondary"}>
+                            {product.type}
+                          </Badge>
+                          <Badge variant="outline" className="capitalize">
+                            {product.category}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className={cn(
+                      "h-5 w-5 transition-transform",
+                      expandedProduct === idx && "transform rotate-180"
+                    )} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 pt-2 border-t bg-muted/30">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Dosage</p>
+                          <p className="text-sm">{product.dosage}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Application</p>
+                          <p className="text-sm">{product.application_method}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Frequency</p>
+                          <p className="text-sm">{product.frequency}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Benefits</p>
+                          <ul className="space-y-1">
+                            {product.benefits.map((benefit, bidx) => (
+                              <li key={bidx} className="text-sm flex items-start gap-2">
+                                <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
+                                {benefit}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Precautions</p>
+                          <ul className="space-y-1">
+                            {product.precautions.map((precaution, pidx) => (
+                              <li key={pidx} className="text-sm flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
+                                {precaution}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Treatment Recommendations */}
       {treatmentRecommendations && treatmentRecommendations.length > 0 && !isHealthy && (
         <Card>
@@ -205,15 +410,40 @@ export function DiagnosisResult({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ol className="space-y-3">
-              {treatmentRecommendations.map((rec, idx) => (
-                <li key={idx} className="flex items-start gap-3">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium flex-shrink-0">
-                    {idx + 1}
-                  </span>
-                  <span className="text-sm">{rec}</span>
-                </li>
-              ))}
+            <ol className="space-y-4">
+              {treatmentRecommendations.map((rec, idx) => {
+                const isEnhanced = typeof rec === 'object' && 'step' in rec;
+                const step = isEnhanced ? (rec as TreatmentRecommendation).step : (rec as string);
+                const yieldImpact = isEnhanced ? (rec as TreatmentRecommendation).estimated_yield_impact : null;
+                const recovery = isEnhanced ? (rec as TreatmentRecommendation).recovery_prediction : null;
+
+                return (
+                  <li key={idx} className="flex items-start gap-3">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium flex-shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{step}</p>
+                      {(yieldImpact || recovery) && (
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {yieldImpact && (
+                            <div className="text-xs p-2 bg-orange-50 rounded border border-orange-100">
+                              <span className="font-medium text-orange-700">Yield Impact:</span>{" "}
+                              <span className="text-orange-600">{yieldImpact}</span>
+                            </div>
+                          )}
+                          {recovery && (
+                            <div className="text-xs p-2 bg-success/10 rounded border border-success/20">
+                              <span className="font-medium text-success">Recovery:</span>{" "}
+                              <span className="text-success/80">{recovery}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           </CardContent>
         </Card>
