@@ -205,6 +205,9 @@ export default function Diagnosis() {
               preventionTips={result.prevention_tips}
               diagnosisDate={result.diagnosis_date}
               lowConfidenceWarning={result.low_confidence_warning}
+              recommendedProducts={result.recommended_products}
+              yieldImpactSummary={result.yield_impact_summary}
+              recoveryPrediction={result.recovery_prediction}
             />
 
             <div className="flex justify-center">

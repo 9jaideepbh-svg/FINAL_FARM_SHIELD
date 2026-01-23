@@ -56,10 +56,34 @@ When analyzing a plant image, you MUST respond with a valid JSON object in this 
     "pathogen_type": "fungal" | "bacterial" | "viral" | "nutrient_deficiency" | "pest" | "environmental" | "none"
   },
   "treatment_recommendations": [
-    "Specific treatment recommendation 1",
-    "Specific treatment recommendation 2",
-    "Specific treatment recommendation 3"
+    {
+      "step": "Specific treatment step description",
+      "estimated_yield_impact": "+15% to +25% yield recovery if applied within 7 days",
+      "recovery_prediction": "Full recovery expected in 2-3 weeks with proper application"
+    }
   ],
+  "recommended_products": [
+    {
+      "name": "Product Name (e.g., NPK 19-19-19 Fertilizer)",
+      "type": "organic" | "inorganic",
+      "category": "fertilizer" | "pesticide" | "fungicide" | "bio-agent" | "growth-regulator",
+      "dosage": "Recommended dosage (e.g., 2-3 grams per liter of water)",
+      "application_method": "How to apply (e.g., foliar spray, soil drench)",
+      "frequency": "Application frequency (e.g., every 7-10 days)",
+      "benefits": ["Why this product helps", "Specific benefit for this disease"],
+      "precautions": ["Safety precaution 1", "Safety precaution 2"]
+    }
+  ],
+  "yield_impact_summary": {
+    "without_treatment": "Expected yield loss without treatment (e.g., 30-50% yield reduction)",
+    "with_treatment": "Expected outcome with treatment (e.g., 80-95% yield recovery)",
+    "treatment_window": "Optimal treatment timeframe (e.g., Within 7 days for best results)"
+  },
+  "recovery_prediction": {
+    "timeline": "Expected recovery timeline (e.g., 2-4 weeks)",
+    "success_rate": "Probability of recovery (e.g., 85% with proper treatment)",
+    "factors": ["Factors affecting recovery", "Environmental conditions needed"]
+  },
   "prevention_tips": [
     "Prevention tip 1",
     "Prevention tip 2",
@@ -73,8 +97,14 @@ Guidelines:
 - If image quality is poor or plant is not clearly visible, lower confidence accordingly
 - If you cannot identify the plant or disease, set confidence below 40 and explain in diagnosis_details
 - Always provide actionable treatment and prevention recommendations
+- Include both organic and inorganic product options when possible
+- For recommended_products, include at least 2-4 products (mix of organic and inorganic)
+- Popular organic products: Neem Oil, Trichoderma, Pseudomonas, Bacillus subtilis, Vermicompost, Panchagavya
+- Popular inorganic products: NPK fertilizers, Mancozeb, Carbendazim, Copper Oxychloride, Imidacloprid
+- Provide realistic yield impact estimates based on disease severity and treatment timing
+- Recovery predictions should be honest and based on agricultural research
 - Consider environmental factors and farming practices in your recommendations
-- For healthy plants, set is_healthy to true, disease_name to "Healthy", and severity to null`;
+- For healthy plants, set is_healthy to true, disease_name to "Healthy", severity to null, and provide maintenance tips instead`;
 
     console.log("Sending request to Lovable AI Gateway for plant diagnosis...");
 

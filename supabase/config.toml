@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.chat]
 verify_jwt = false
+
+[functions.weather]
+verify_jwt = false
+
+[functions.soil-analysis]
+verify_jwt = false
