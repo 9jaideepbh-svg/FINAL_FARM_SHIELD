@@ -12,21 +12,21 @@ interface PlantIdSuggestion {
   probability: number;
   similar_images?: Array<{ url: string }>;
   details?: {
-    description?: string;
+    description?: { value?: string };
     treatment?: {
-      chemical?: string[];
-      biological?: string[];
-      prevention?: string[];
+      chemical?: Array<{ value?: string }>;
+      biological?: Array<{ value?: string }>;
+      prevention?: Array<{ value?: string }>;
     };
-    cause?: string;
-    common_names?: string[];
+    cause?: { value?: string };
+    common_names?: Array<{ value?: string }>;
     classification?: {
-      kingdom?: string;
-      phylum?: string;
-      class?: string;
-      order?: string;
-      family?: string;
-      genus?: string;
+      kingdom?: { value?: string };
+      phylum?: { value?: string };
+      class?: { value?: string };
+      order?: { value?: string };
+      family?: { value?: string };
+      genus?: { value?: string };
     };
   };
 }
@@ -52,7 +52,6 @@ serve(async (req) => {
 
   try {
     const PLANT_ID_API_KEY = Deno.env.get("PLANT_ID_API_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!PLANT_ID_API_KEY) {
       throw new Error("PLANT_ID_API_KEY is not configured");
@@ -76,8 +75,8 @@ serve(async (req) => {
 
     console.log("Sending request to Plant.id API for plant diagnosis...");
 
-    // Call Plant.id API for disease identification
-    const plantIdResponse = await fetch("https://plant.id/api/v3/health_assessment", {
+    // Call Plant.id API v3 - using identification endpoint with health assessment
+    const plantIdResponse = await fetch("https://plant.id/api/v3/identification?details=common_names,description,treatment,cause&health=all", {
       method: "POST",
       headers: {
         "Api-Key": PLANT_ID_API_KEY,
@@ -85,24 +84,14 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         images: [imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : imageUrl],
-        latitude: null,
-        longitude: null,
         similar_images: true,
-        health_only: false,
-        details: [
-          "description",
-          "treatment",
-          "cause",
-          "common_names",
-          "classification"
-        ],
       }),
     });
 
     if (!plantIdResponse.ok) {
       const errorText = await plantIdResponse.text();
       console.error("Plant.id API error:", plantIdResponse.status, errorText);
-      throw new Error(`Plant.id API error: ${plantIdResponse.status}`);
+      throw new Error(`Plant.id API error: ${plantIdResponse.status} - ${errorText}`);
     }
 
     const plantIdData: PlantIdResponse = await plantIdResponse.json();
@@ -135,14 +124,18 @@ serve(async (req) => {
       else severity = "low";
     }
 
+    // Extract description from details
+    const diseaseDescription = topDisease?.details?.description?.value || "Disease symptoms detected";
+    const diseaseCause = topDisease?.details?.cause?.value || "unknown";
+
     // Build diagnosis details
     const diagnosisDetails = {
       symptoms_observed: isHealthy 
         ? ["Plant appears healthy with no visible disease symptoms"]
-        : [topDisease?.details?.description || "Disease symptoms detected"],
+        : [diseaseDescription],
       affected_parts: isHealthy ? [] : ["leaves"],
       disease_stage: isHealthy ? null : (severity === "critical" ? "advanced" : severity === "high" ? "moderate" : "early"),
-      pathogen_type: isHealthy ? "none" : (topDisease?.details?.cause || "unknown"),
+      pathogen_type: isHealthy ? "none" : diseaseCause,
       plant_id_confidence: confidencePercentage,
       alternative_diseases: diseaseSuggestions.slice(1, 4).map(d => ({
         name: d.name,
@@ -150,7 +143,7 @@ serve(async (req) => {
       }))
     };
 
-    // Build treatment recommendations using Plant.id data + AI enhancement
+    // Build treatment recommendations using Plant.id data
     let treatmentRecommendations: Array<{ step: string; estimated_yield_impact: string; recovery_prediction: string }> = [];
     let recommendedProducts: Array<{
       name: string;
@@ -223,30 +216,43 @@ serve(async (req) => {
       
       if (treatment?.chemical?.length) {
         treatment.chemical.forEach((chem, idx) => {
-          treatmentRecommendations.push({
-            step: chem,
-            estimated_yield_impact: idx === 0 ? "+25-35% yield recovery" : "+10-15% additional improvement",
-            recovery_prediction: "Visible improvement in 7-14 days"
-          });
+          const chemValue = typeof chem === 'string' ? chem : chem?.value;
+          if (chemValue) {
+            treatmentRecommendations.push({
+              step: chemValue,
+              estimated_yield_impact: idx === 0 ? "+25-35% yield recovery" : "+10-15% additional improvement",
+              recovery_prediction: "Visible improvement in 7-14 days"
+            });
+          }
         });
       }
       
       if (treatment?.biological?.length) {
         treatment.biological.forEach((bio) => {
-          treatmentRecommendations.push({
-            step: bio,
-            estimated_yield_impact: "+15-25% yield recovery (organic method)",
-            recovery_prediction: "Gradual improvement over 2-3 weeks"
-          });
+          const bioValue = typeof bio === 'string' ? bio : bio?.value;
+          if (bioValue) {
+            treatmentRecommendations.push({
+              step: bioValue,
+              estimated_yield_impact: "+15-25% yield recovery (organic method)",
+              recovery_prediction: "Gradual improvement over 2-3 weeks"
+            });
+          }
         });
       }
 
-      preventionTips = treatment?.prevention || [
-        "Ensure proper plant spacing for air circulation",
-        "Avoid overhead watering",
-        "Remove and destroy infected plant parts",
-        "Practice crop rotation"
-      ];
+      // Extract prevention tips
+      if (treatment?.prevention?.length) {
+        preventionTips = treatment.prevention.map(p => typeof p === 'string' ? p : p?.value || '').filter(Boolean);
+      }
+      
+      if (preventionTips.length === 0) {
+        preventionTips = [
+          "Ensure proper plant spacing for air circulation",
+          "Avoid overhead watering",
+          "Remove and destroy infected plant parts",
+          "Practice crop rotation"
+        ];
+      }
 
       // Add recommended products based on disease type
       recommendedProducts = [
