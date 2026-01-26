@@ -12,6 +12,29 @@ import { useToast } from "@/hooks/use-toast";
 import { uploadPlantImage } from "@/lib/supabase-storage";
 import { supabase } from "@/integrations/supabase/client";
 
+interface RecommendedProduct {
+  name: string;
+  type: "organic" | "inorganic";
+  category: string;
+  dosage: string;
+  application_method: string;
+  frequency: string;
+  benefits: string[];
+  precautions: string[];
+}
+
+interface YieldImpactSummary {
+  without_treatment: string;
+  with_treatment: string;
+  treatment_window: string;
+}
+
+interface RecoveryPrediction {
+  timeline: string;
+  success_rate: string;
+  factors: string[];
+}
+
 interface DiagnosisResultData {
   diagnosis_id?: string;
   crop_name: string;
@@ -25,10 +48,17 @@ interface DiagnosisResultData {
     disease_stage?: string;
     pathogen_type?: string;
   };
-  treatment_recommendations?: string[];
+  treatment_recommendations?: Array<{
+    step: string;
+    estimated_yield_impact: string;
+    recovery_prediction: string;
+  }> | string[];
   prevention_tips?: string[];
   diagnosis_date: string;
   low_confidence_warning?: boolean;
+  recommended_products?: RecommendedProduct[];
+  yield_impact_summary?: YieldImpactSummary;
+  recovery_prediction?: RecoveryPrediction;
 }
 
 export default function Diagnosis() {
