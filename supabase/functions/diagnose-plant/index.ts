@@ -3,46 +3,27 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface PlantIdSuggestion {
-  id: string;
-  name: string;
-  probability: number;
-  similar_images?: Array<{ url: string }>;
-  details?: {
-    description?: { value?: string };
-    treatment?: {
-      chemical?: Array<{ value?: string }>;
-      biological?: Array<{ value?: string }>;
-      prevention?: Array<{ value?: string }>;
-    };
-    cause?: { value?: string };
-    common_names?: Array<{ value?: string }>;
-    classification?: {
-      kingdom?: { value?: string };
-      phylum?: { value?: string };
-      class?: { value?: string };
-      order?: { value?: string };
-      family?: { value?: string };
-      genus?: { value?: string };
-    };
+interface DiagnosisResult {
+  plant_name: string;
+  condition: string;
+  is_healthy: boolean;
+  confidence_percentage: number;
+  symptoms_observed: string[];
+  action_plan: {
+    immediate_actions: string[];
+    short_term: string[];
+    long_term: string[];
   };
-}
-
-interface PlantIdResponse {
-  result: {
-    is_plant: { probability: number; binary: boolean };
-    is_healthy: { probability: number; binary: boolean };
-    disease?: {
-      suggestions: PlantIdSuggestion[];
-    };
-    classification?: {
-      suggestions: PlantIdSuggestion[];
-    };
+  improvements: {
+    soil_management: string[];
+    water_management: string[];
+    nutrient_management: string[];
+    pest_prevention: string[];
   };
-  status: string;
+  severity?: string;
 }
 
 serve(async (req) => {
@@ -51,10 +32,10 @@ serve(async (req) => {
   }
 
   try {
-    const PLANT_ID_API_KEY = Deno.env.get("PLANT_ID_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
-    if (!PLANT_ID_API_KEY) {
-      throw new Error("PLANT_ID_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const { imageBase64, imageUrl, userId } = await req.json();
@@ -73,271 +54,174 @@ serve(async (req) => {
       );
     }
 
-    console.log("Sending request to Plant.id API for plant diagnosis...");
+    console.log("Sending request to Lovable AI Gateway for plant diagnosis...");
 
-    // Call Plant.id API v3 - using identification endpoint with health assessment
-    const plantIdResponse = await fetch("https://plant.id/api/v3/identification?details=common_names,description,treatment,cause&health=all", {
+    const systemPrompt = `You are an expert agricultural scientist and plant pathologist. Analyze the provided plant image and provide a comprehensive diagnosis.
+
+Your response MUST be a valid JSON object with this exact structure:
+{
+  "plant_name": "Scientific name (Common name)",
+  "condition": "Healthy" or "Disease/Issue name",
+  "is_healthy": true/false,
+  "confidence_percentage": 0-100,
+  "symptoms_observed": ["symptom 1", "symptom 2"],
+  "action_plan": {
+    "immediate_actions": ["action 1", "action 2"],
+    "short_term": ["action for next 1-2 weeks"],
+    "long_term": ["action for next month+"]
+  },
+  "improvements": {
+    "soil_management": ["improvement 1"],
+    "water_management": ["improvement 1"],
+    "nutrient_management": ["improvement 1"],
+    "pest_prevention": ["improvement 1"]
+  },
+  "severity": "none" | "low" | "medium" | "high" | "critical"
+}
+
+Be specific, practical, and actionable in your recommendations. Focus on organic solutions when possible.`;
+
+    const imageContent = imageBase64 
+      ? `data:image/jpeg;base64,${imageBase64}`
+      : imageUrl;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Api-Key": PLANT_ID_API_KEY,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        images: [imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : imageUrl],
-        similar_images: true,
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: { url: imageContent }
+              },
+              {
+                type: "text",
+                text: "Please analyze this plant image and provide a detailed diagnosis with action plan and improvements."
+              }
+            ]
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
       }),
     });
 
-    if (!plantIdResponse.ok) {
-      const errorText = await plantIdResponse.text();
-      console.error("Plant.id API error:", plantIdResponse.status, errorText);
-      throw new Error(`Plant.id API error: ${plantIdResponse.status} - ${errorText}`);
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Payment required, please add funds to your workspace." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    const plantIdData: PlantIdResponse = await plantIdResponse.json();
-    console.log("Plant.id response received:", JSON.stringify(plantIdData, null, 2));
+    const aiResponse = await response.json();
+    const content = aiResponse.choices?.[0]?.message?.content;
 
-    // Parse Plant.id response
-    const isHealthy = plantIdData.result.is_healthy?.binary ?? true;
-    const healthProbability = plantIdData.result.is_healthy?.probability ?? 1;
-    
-    // Get plant classification
-    const plantSuggestion = plantIdData.result.classification?.suggestions?.[0];
-    const cropName = plantSuggestion?.name || "Unknown Plant";
-    
-    // Get disease information
-    const diseaseSuggestions = plantIdData.result.disease?.suggestions || [];
-    const topDisease = diseaseSuggestions[0];
-    
-    const diseaseName = isHealthy ? "Healthy" : (topDisease?.name || "Unknown Disease");
-    const confidencePercentage = isHealthy 
-      ? Math.round(healthProbability * 100)
-      : Math.round((topDisease?.probability || 0) * 100);
-
-    // Determine severity based on probability
-    let severity: string | null = null;
-    if (!isHealthy && topDisease) {
-      const prob = topDisease.probability;
-      if (prob >= 0.8) severity = "critical";
-      else if (prob >= 0.6) severity = "high";
-      else if (prob >= 0.4) severity = "medium";
-      else severity = "low";
+    if (!content) {
+      throw new Error("No response from AI");
     }
 
-    // Extract description from details
-    const diseaseDescription = topDisease?.details?.description?.value || "Disease symptoms detected";
-    const diseaseCause = topDisease?.details?.cause?.value || "unknown";
+    console.log("AI Response received:", content);
 
-    // Build diagnosis details
-    const diagnosisDetails = {
-      symptoms_observed: isHealthy 
-        ? ["Plant appears healthy with no visible disease symptoms"]
-        : [diseaseDescription],
-      affected_parts: isHealthy ? [] : ["leaves"],
-      disease_stage: isHealthy ? null : (severity === "critical" ? "advanced" : severity === "high" ? "moderate" : "early"),
-      pathogen_type: isHealthy ? "none" : diseaseCause,
-      plant_id_confidence: confidencePercentage,
-      alternative_diseases: diseaseSuggestions.slice(1, 4).map(d => ({
-        name: d.name,
-        probability: Math.round(d.probability * 100)
-      }))
-    };
-
-    // Build treatment recommendations using Plant.id data
-    let treatmentRecommendations: Array<{ step: string; estimated_yield_impact: string; recovery_prediction: string }> = [];
-    let recommendedProducts: Array<{
-      name: string;
-      type: "organic" | "inorganic";
-      category: string;
-      dosage: string;
-      application_method: string;
-      frequency: string;
-      benefits: string[];
-      precautions: string[];
-    }> = [];
-    let preventionTips: string[] = [];
-    let yieldImpactSummary = {
-      without_treatment: isHealthy ? "N/A - Plant is healthy" : "Potential 20-50% yield loss if untreated",
-      with_treatment: isHealthy ? "N/A - Maintain current care" : "80-95% yield recovery expected",
-      treatment_window: isHealthy ? "N/A" : "Within 7-14 days for best results"
-    };
-    let recoveryPrediction = {
-      timeline: isHealthy ? "N/A" : "2-4 weeks with proper treatment",
-      success_rate: isHealthy ? "N/A" : "85% with recommended treatment",
-      factors: isHealthy 
-        ? ["Continue regular care", "Monitor for any changes"]
-        : ["Early detection", "Proper treatment application", "Environmental conditions"]
-    };
-
-    if (isHealthy) {
-      treatmentRecommendations = [
-        {
-          step: "Continue regular watering and fertilization schedule",
-          estimated_yield_impact: "Maintains optimal yield potential",
-          recovery_prediction: "N/A - Plant is healthy"
-        },
-        {
-          step: "Monitor regularly for any signs of stress or disease",
-          estimated_yield_impact: "Early detection prevents yield loss",
-          recovery_prediction: "N/A - Preventive measure"
-        }
-      ];
-      preventionTips = [
-        "Maintain proper spacing between plants for air circulation",
-        "Water at the base of plants to avoid wet foliage",
-        "Remove dead or yellowing leaves promptly",
-        "Rotate crops annually to prevent soil-borne diseases"
-      ];
-      recommendedProducts = [
-        {
-          name: "Balanced NPK Fertilizer (10-10-10)",
-          type: "inorganic",
-          category: "fertilizer",
-          dosage: "1-2 tablespoons per plant",
-          application_method: "Soil application",
-          frequency: "Every 2-3 weeks during growing season",
-          benefits: ["Promotes healthy growth", "Supports fruit development"],
-          precautions: ["Avoid over-fertilization", "Water after application"]
-        },
-        {
-          name: "Neem Oil Spray",
-          type: "organic",
-          category: "pesticide",
-          dosage: "2-3 ml per liter of water",
-          application_method: "Foliar spray",
-          frequency: "Weekly as preventive",
-          benefits: ["Natural pest deterrent", "Prevents fungal infections"],
-          precautions: ["Apply in evening", "Test on small area first"]
-        }
-      ];
-    } else {
-      // Get treatment info from Plant.id
-      const treatment = topDisease?.details?.treatment;
-      
-      if (treatment?.chemical?.length) {
-        treatment.chemical.forEach((chem, idx) => {
-          const chemValue = typeof chem === 'string' ? chem : chem?.value;
-          if (chemValue) {
-            treatmentRecommendations.push({
-              step: chemValue,
-              estimated_yield_impact: idx === 0 ? "+25-35% yield recovery" : "+10-15% additional improvement",
-              recovery_prediction: "Visible improvement in 7-14 days"
-            });
-          }
-        });
+    // Parse the JSON response from the AI
+    let diagnosisData: DiagnosisResult;
+    try {
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON found in response");
       }
-      
-      if (treatment?.biological?.length) {
-        treatment.biological.forEach((bio) => {
-          const bioValue = typeof bio === 'string' ? bio : bio?.value;
-          if (bioValue) {
-            treatmentRecommendations.push({
-              step: bioValue,
-              estimated_yield_impact: "+15-25% yield recovery (organic method)",
-              recovery_prediction: "Gradual improvement over 2-3 weeks"
-            });
-          }
-        });
-      }
-
-      // Extract prevention tips
-      if (treatment?.prevention?.length) {
-        preventionTips = treatment.prevention.map(p => typeof p === 'string' ? p : p?.value || '').filter(Boolean);
-      }
-      
-      if (preventionTips.length === 0) {
-        preventionTips = [
-          "Ensure proper plant spacing for air circulation",
-          "Avoid overhead watering",
-          "Remove and destroy infected plant parts",
-          "Practice crop rotation"
-        ];
-      }
-
-      // Add recommended products based on disease type
-      recommendedProducts = [
-        {
-          name: "Copper Fungicide",
-          type: "inorganic",
-          category: "fungicide",
-          dosage: "2-3 grams per liter of water",
-          application_method: "Foliar spray",
-          frequency: "Every 7-10 days until symptoms subside",
-          benefits: ["Broad-spectrum fungal control", "Prevents spore spread"],
-          precautions: ["Avoid spraying in hot sun", "Wear protective gear"]
+      diagnosisData = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", parseError);
+      // Provide a fallback response
+      diagnosisData = {
+        plant_name: "Unknown Plant",
+        condition: "Unable to analyze",
+        is_healthy: false,
+        confidence_percentage: 0,
+        symptoms_observed: ["Image analysis failed - please try with a clearer image"],
+        action_plan: {
+          immediate_actions: ["Retake photo with better lighting"],
+          short_term: ["Consult local agricultural expert"],
+          long_term: ["Regular plant monitoring recommended"]
         },
-        {
-          name: "Trichoderma viride",
-          type: "organic",
-          category: "bio-agent",
-          dosage: "5 grams per liter of water",
-          application_method: "Soil drench or foliar spray",
-          frequency: "Every 15 days",
-          benefits: ["Natural disease suppression", "Improves soil health", "Safe for beneficial insects"],
-          precautions: ["Store in cool place", "Use fresh solution"]
+        improvements: {
+          soil_management: ["Test soil pH and nutrients"],
+          water_management: ["Ensure proper drainage"],
+          nutrient_management: ["Apply balanced fertilizer"],
+          pest_prevention: ["Inspect plants regularly"]
         },
-        {
-          name: "Mancozeb 75% WP",
-          type: "inorganic",
-          category: "fungicide",
-          dosage: "2 grams per liter of water",
-          application_method: "Foliar spray",
-          frequency: "Every 7 days during active infection",
-          benefits: ["Effective against multiple fungal diseases", "Prevents new infections"],
-          precautions: ["Maintain 7-day pre-harvest interval", "Rotate with other fungicides"]
-        },
-        {
-          name: "Pseudomonas fluorescens",
-          type: "organic",
-          category: "bio-agent",
-          dosage: "10 grams per liter of water",
-          application_method: "Foliar spray or seed treatment",
-          frequency: "Every 10-15 days",
-          benefits: ["Induces plant immunity", "Competes with pathogens", "Eco-friendly"],
-          precautions: ["Apply in evening hours", "Avoid mixing with chemical pesticides"]
-        }
-      ];
-
-      // If no treatment recommendations from Plant.id, add generic ones
-      if (treatmentRecommendations.length === 0) {
-        treatmentRecommendations = [
-          {
-            step: "Remove and destroy all infected plant parts immediately",
-            estimated_yield_impact: "Prevents 20-30% additional yield loss",
-            recovery_prediction: "Stops disease spread within 3-5 days"
-          },
-          {
-            step: "Apply appropriate fungicide or treatment based on disease type",
-            estimated_yield_impact: "+25-40% yield recovery",
-            recovery_prediction: "Improvement visible in 7-14 days"
-          },
-          {
-            step: "Improve air circulation and reduce humidity around plants",
-            estimated_yield_impact: "Reduces disease pressure by 15-20%",
-            recovery_prediction: "Long-term prevention measure"
-          }
-        ];
-      }
+        severity: "medium"
+      };
     }
 
-    // Build final result
-    const diagnosisResult = {
-      crop_name: cropName,
-      disease_name: diseaseName,
-      confidence_percentage: confidencePercentage,
-      is_healthy: isHealthy,
-      severity,
-      diagnosis_details: diagnosisDetails,
-      treatment_recommendations: treatmentRecommendations,
-      recommended_products: recommendedProducts,
-      yield_impact_summary: yieldImpactSummary,
-      recovery_prediction: recoveryPrediction,
-      prevention_tips: preventionTips,
-      data_source: "Plant.id API"
-    };
-
-    // Add server timestamp
+    // Build result in the format expected by the frontend
     const serverTimestamp = new Date().toISOString();
+    
+    const result = {
+      crop_name: diagnosisData.plant_name,
+      disease_name: diagnosisData.condition,
+      confidence_percentage: diagnosisData.confidence_percentage,
+      is_healthy: diagnosisData.is_healthy,
+      severity: diagnosisData.is_healthy ? null : diagnosisData.severity,
+      diagnosis_details: {
+        symptoms_observed: diagnosisData.symptoms_observed,
+        affected_parts: [],
+        disease_stage: diagnosisData.severity === "critical" ? "advanced" : 
+                       diagnosisData.severity === "high" ? "moderate" : "early",
+        pathogen_type: diagnosisData.is_healthy ? "none" : "unknown"
+      },
+      action_plan: diagnosisData.action_plan,
+      improvements: diagnosisData.improvements,
+      prevention_tips: [
+        ...diagnosisData.improvements.pest_prevention,
+        ...diagnosisData.action_plan.long_term
+      ],
+      treatment_recommendations: [
+        ...diagnosisData.action_plan.immediate_actions.map(action => ({
+          step: action,
+          estimated_yield_impact: "Critical for plant recovery",
+          recovery_prediction: "Immediate action needed"
+        })),
+        ...diagnosisData.action_plan.short_term.map(action => ({
+          step: action,
+          estimated_yield_impact: "Supports recovery process",
+          recovery_prediction: "Expected improvement in 1-2 weeks"
+        }))
+      ],
+      yield_impact_summary: {
+        without_treatment: diagnosisData.is_healthy ? "N/A - Plant is healthy" : "Potential significant yield loss if untreated",
+        with_treatment: diagnosisData.is_healthy ? "N/A - Continue current care" : "Good recovery expected with proper care",
+        treatment_window: diagnosisData.is_healthy ? "N/A" : "Start treatment within 7 days for best results"
+      },
+      recovery_prediction: {
+        timeline: diagnosisData.is_healthy ? "N/A" : "2-4 weeks with proper treatment",
+        success_rate: diagnosisData.is_healthy ? "N/A" : `${Math.max(50, 100 - (diagnosisData.confidence_percentage > 80 ? 15 : 25))}% with recommended treatment`,
+        factors: diagnosisData.is_healthy 
+          ? ["Continue regular care", "Monitor for any changes"]
+          : ["Early intervention", "Proper treatment application", "Environmental conditions", "Plant health status"]
+      },
+      data_source: "Lovable AI Gateway"
+    };
 
     // Store in database
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -349,14 +233,18 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         image_url: imageUrl || "base64-upload",
-        crop_name: diagnosisResult.crop_name,
-        disease_name: diagnosisResult.disease_name,
-        confidence_percentage: diagnosisResult.confidence_percentage,
-        is_healthy: diagnosisResult.is_healthy,
-        diagnosis_details: diagnosisResult.diagnosis_details,
-        severity: diagnosisResult.severity,
-        treatment_recommendations: treatmentRecommendations.map(t => t.step),
-        prevention_tips: diagnosisResult.prevention_tips,
+        crop_name: result.crop_name,
+        disease_name: result.disease_name,
+        confidence_percentage: result.confidence_percentage,
+        is_healthy: result.is_healthy,
+        diagnosis_details: {
+          ...result.diagnosis_details,
+          action_plan: result.action_plan,
+          improvements: result.improvements
+        },
+        severity: result.severity,
+        treatment_recommendations: result.treatment_recommendations.map(t => t.step),
+        prevention_tips: result.prevention_tips,
         diagnosis_date: serverTimestamp,
       })
       .select()
@@ -366,14 +254,14 @@ serve(async (req) => {
       console.error("Database error:", dbError);
     }
 
-    console.log("Diagnosis completed successfully:", diagnosisResult.disease_name);
+    console.log("Diagnosis completed successfully:", result.disease_name);
 
     return new Response(
       JSON.stringify({
-        ...diagnosisResult,
+        ...result,
         diagnosis_id: savedDiagnosis?.id,
         diagnosis_date: serverTimestamp,
-        low_confidence_warning: diagnosisResult.confidence_percentage < 60,
+        low_confidence_warning: result.confidence_percentage < 60,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

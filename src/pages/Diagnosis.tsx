@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { ImageUpload } from "@/components/diagnosis/ImageUpload";
-import { DiagnosisResult } from "@/components/diagnosis/DiagnosisResult";
+import { SimplifiedResult } from "@/components/diagnosis/SimplifiedResult";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,27 +12,17 @@ import { useToast } from "@/hooks/use-toast";
 import { uploadPlantImage } from "@/lib/supabase-storage";
 import { supabase } from "@/integrations/supabase/client";
 
-interface RecommendedProduct {
-  name: string;
-  type: "organic" | "inorganic";
-  category: string;
-  dosage: string;
-  application_method: string;
-  frequency: string;
-  benefits: string[];
-  precautions: string[];
+interface ActionPlan {
+  immediate_actions: string[];
+  short_term: string[];
+  long_term: string[];
 }
 
-interface YieldImpactSummary {
-  without_treatment: string;
-  with_treatment: string;
-  treatment_window: string;
-}
-
-interface RecoveryPrediction {
-  timeline: string;
-  success_rate: string;
-  factors: string[];
+interface Improvements {
+  soil_management: string[];
+  water_management: string[];
+  nutrient_management: string[];
+  pest_prevention: string[];
 }
 
 interface DiagnosisResultData {
@@ -47,18 +37,14 @@ interface DiagnosisResultData {
     affected_parts?: string[];
     disease_stage?: string;
     pathogen_type?: string;
+    action_plan?: ActionPlan;
+    improvements?: Improvements;
   };
-  treatment_recommendations?: Array<{
-    step: string;
-    estimated_yield_impact: string;
-    recovery_prediction: string;
-  }> | string[];
+  action_plan?: ActionPlan;
+  improvements?: Improvements;
   prevention_tips?: string[];
   diagnosis_date: string;
   low_confidence_warning?: boolean;
-  recommended_products?: RecommendedProduct[];
-  yield_impact_summary?: YieldImpactSummary;
-  recovery_prediction?: RecoveryPrediction;
 }
 
 export default function Diagnosis() {
@@ -224,20 +210,17 @@ export default function Diagnosis() {
               </Card>
             )}
             
-            <DiagnosisResult
-              cropName={result.crop_name}
-              diseaseName={result.disease_name}
-              confidencePercentage={result.confidence_percentage}
+            <SimplifiedResult
+              plantName={result.crop_name}
+              condition={result.disease_name}
               isHealthy={result.is_healthy}
+              confidencePercentage={result.confidence_percentage}
+              symptomsObserved={result.diagnosis_details?.symptoms_observed}
+              actionPlan={result.action_plan || result.diagnosis_details?.action_plan}
+              improvements={result.improvements || result.diagnosis_details?.improvements}
               severity={result.severity}
-              diagnosisDetails={result.diagnosis_details}
-              treatmentRecommendations={result.treatment_recommendations}
-              preventionTips={result.prevention_tips}
               diagnosisDate={result.diagnosis_date}
               lowConfidenceWarning={result.low_confidence_warning}
-              recommendedProducts={result.recommended_products}
-              yieldImpactSummary={result.yield_impact_summary}
-              recoveryPrediction={result.recovery_prediction}
             />
 
             <div className="flex justify-center">
