@@ -56,10 +56,35 @@ serve(async (req) => {
 
     console.log("Sending request to Lovable AI Gateway for plant diagnosis...");
 
-    const systemPrompt = `You are an expert agricultural scientist and plant pathologist. Analyze the provided plant image and provide a comprehensive diagnosis.
+    const systemPrompt = `You are an expert agricultural scientist and plant pathologist. Analyze the provided image.
 
-Your response MUST be a valid JSON object with this exact structure:
+FIRST: Determine if the image contains a plant, leaf, fruit, vegetable, crop, or any agricultural/botanical subject.
+
+If the image does NOT contain any plant, leaf, fruit, vegetable, or crop (e.g. it's a person, animal, car, building, random object, text, screenshot, etc.), respond with EXACTLY this JSON:
 {
+  "is_valid_plant_image": false,
+  "plant_name": "INVALID IMAGE",
+  "condition": "Not a plant image",
+  "is_healthy": false,
+  "confidence_percentage": 0,
+  "symptoms_observed": ["The uploaded image does not contain a plant, leaf, fruit, or crop. Please upload a clear photo of a plant for diagnosis."],
+  "action_plan": {
+    "immediate_actions": ["Upload a clear image of a plant leaf, fruit, or crop"],
+    "short_term": [],
+    "long_term": []
+  },
+  "improvements": {
+    "soil_management": [],
+    "water_management": [],
+    "nutrient_management": [],
+    "pest_prevention": []
+  },
+  "severity": "none"
+}
+
+If the image DOES contain a plant/leaf/fruit/crop, provide a comprehensive diagnosis with this JSON structure:
+{
+  "is_valid_plant_image": true,
   "plant_name": "Scientific name (Common name)",
   "condition": "Healthy" or "Disease/Issue name",
   "is_healthy": true/false,

@@ -334,41 +334,6 @@ export function SimplifiedResult({
                 </div>
               )}
 
-              {/* Nutrient Management */}
-              {improvements.nutrient_management?.length > 0 && (
-                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  <h4 className="font-medium text-primary mb-3 flex items-center gap-2">
-                    <Lightbulb className="h-4 w-4" />
-                    Nutrient Management
-                  </h4>
-                  <ul className="space-y-1">
-                    {improvements.nutrient_management.map((item, idx) => (
-                      <li key={idx} className="text-sm flex items-start gap-2">
-                        <span className="text-primary">•</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Pest Prevention */}
-              {improvements.pest_prevention?.length > 0 && (
-                <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                  <h4 className="font-medium text-warning mb-3 flex items-center gap-2">
-                    <Lightbulb className="h-4 w-4" />
-                    Pest Prevention
-                  </h4>
-                  <ul className="space-y-1">
-                    {improvements.pest_prevention.map((item, idx) => (
-                      <li key={idx} className="text-sm flex items-start gap-2">
-                        <span className="text-warning">•</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

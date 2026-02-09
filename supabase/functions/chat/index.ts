@@ -38,7 +38,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, languageInstruction } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -67,7 +67,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: SYSTEM_PROMPT + (languageInstruction ? `\n\nIMPORTANT: ${languageInstruction}` : "") },
           ...messages,
         ],
         stream: true,

@@ -52,7 +52,7 @@ export default function Index() {
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
               Protect Your Crops with{" "}
-              <span className="text-gradient">Farm Shield</span>
+              <span className="text-gradient bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-hero)" }}>Farm Shield</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Advanced AI plant disease diagnosis that helps farmers identify problems early, 
