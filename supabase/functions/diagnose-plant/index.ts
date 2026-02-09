@@ -24,6 +24,21 @@ interface DiagnosisResult {
     pest_prevention: string[];
   };
   severity?: string;
+  fertilizer_recommendations: Array<{
+    name: string;
+    type: string;
+    npk_ratio?: string;
+    dosage: string;
+    application_time: string;
+    application_method: string;
+    benefits: string[];
+  }>;
+  organic_amendments: Array<{
+    name: string;
+    dosage: string;
+    benefits: string[];
+    application_method: string;
+  }>;
 }
 
 serve(async (req) => {
@@ -91,19 +106,39 @@ If the image DOES contain a plant/leaf/fruit/crop, provide a comprehensive diagn
   "confidence_percentage": 0-100,
   "symptoms_observed": ["symptom 1", "symptom 2"],
   "action_plan": {
-    "immediate_actions": ["action 1", "action 2"],
-    "short_term": ["action for next 1-2 weeks"],
-    "long_term": ["action for next month+"]
+    "immediate_actions": ["detailed action 1 with specific product names and dosages", "action 2"],
+    "short_term": ["detailed action for next 1-2 weeks with specific steps"],
+    "long_term": ["detailed action for next month+ with specific practices"]
   },
   "improvements": {
-    "soil_management": ["improvement 1"],
-    "water_management": ["improvement 1"],
-    "nutrient_management": ["improvement 1"],
-    "pest_prevention": ["improvement 1"]
+    "soil_management": ["specific improvement with product/method details"],
+    "water_management": ["specific irrigation advice with frequency and volume"],
+    "nutrient_management": ["specific NPK ratios and micronutrient advice"],
+    "pest_prevention": ["specific pesticide/biopesticide names with dosages"]
   },
-  "severity": "none" | "low" | "medium" | "high" | "critical"
+  "severity": "none" | "low" | "medium" | "high" | "critical",
+  "fertilizer_recommendations": [
+    {
+      "name": "Specific fertilizer product name (e.g., DAP, Urea, NPK 20:20:20)",
+      "type": "chemical" or "organic",
+      "npk_ratio": "e.g., 18:46:0",
+      "dosage": "e.g., 50 kg per acre",
+      "application_time": "e.g., Before sowing / At flowering stage",
+      "application_method": "e.g., Broadcast / Foliar spray / Soil drench",
+      "benefits": ["benefit 1", "benefit 2"]
+    }
+  ],
+  "organic_amendments": [
+    {
+      "name": "e.g., Neem Oil, Trichoderma, Vermicompost, Panchagavya",
+      "dosage": "e.g., 5ml per liter of water",
+      "benefits": ["benefit 1", "benefit 2"],
+      "application_method": "e.g., Foliar spray every 15 days"
+    }
+  ]
 }
 
+Provide at least 3 fertilizer recommendations and 3 organic amendments. Be very specific with product names, dosages, application timing and methods. Include both chemical and organic options. Focus on practical, locally available products.
 Be specific, practical, and actionable in your recommendations. Focus on organic solutions when possible.`;
 
     const imageContent = imageBase64 
@@ -195,7 +230,9 @@ Be specific, practical, and actionable in your recommendations. Focus on organic
           nutrient_management: ["Apply balanced fertilizer"],
           pest_prevention: ["Inspect plants regularly"]
         },
-        severity: "medium"
+        severity: "medium",
+        fertilizer_recommendations: [],
+        organic_amendments: [],
       };
     }
 
@@ -217,6 +254,8 @@ Be specific, practical, and actionable in your recommendations. Focus on organic
       },
       action_plan: diagnosisData.action_plan,
       improvements: diagnosisData.improvements,
+      fertilizer_recommendations: diagnosisData.fertilizer_recommendations || [],
+      organic_amendments: diagnosisData.organic_amendments || [],
       prevention_tips: [
         ...diagnosisData.improvements.pest_prevention,
         ...diagnosisData.action_plan.long_term

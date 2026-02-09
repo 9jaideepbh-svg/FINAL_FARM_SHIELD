@@ -9,11 +9,15 @@ import {
   Wrench,
   ArrowUpCircle,
   AlertTriangle,
+  Sprout,
+  DollarSign,
+  FlaskConical,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 interface ActionPlan {
@@ -29,6 +33,23 @@ interface Improvements {
   pest_prevention: string[];
 }
 
+interface FertilizerRecommendation {
+  name: string;
+  type: string;
+  npk_ratio?: string;
+  dosage: string;
+  application_time: string;
+  application_method: string;
+  benefits: string[];
+}
+
+interface OrganicAmendment {
+  name: string;
+  dosage: string;
+  benefits: string[];
+  application_method: string;
+}
+
 interface SimplifiedResultProps {
   plantName: string;
   condition: string;
@@ -40,6 +61,8 @@ interface SimplifiedResultProps {
   severity?: string | null;
   diagnosisDate: string;
   lowConfidenceWarning?: boolean;
+  fertilizerRecommendations?: FertilizerRecommendation[];
+  organicAmendments?: OrganicAmendment[];
 }
 
 export function SimplifiedResult({
@@ -53,6 +76,8 @@ export function SimplifiedResult({
   severity,
   diagnosisDate,
   lowConfidenceWarning,
+  fertilizerRecommendations,
+  organicAmendments,
 }: SimplifiedResultProps) {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -97,33 +122,33 @@ export function SimplifiedResult({
         </Card>
       )}
 
-      {/* Plant Name & Condition Card */}
-      <Card className="overflow-hidden">
+      {/* Plant Name & Condition Card - Prominent Pop-up Style */}
+      <Card className="overflow-hidden shadow-xl border-2 border-primary/30">
         <div className={cn(
-          "p-6 text-white",
+          "p-8 text-white text-center",
           isHealthy ? "bg-success" : "bg-destructive"
         )}>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-3">
             {isHealthy ? (
-              <CheckCircle className="h-10 w-10" />
+              <CheckCircle className="h-16 w-16" />
             ) : (
-              <XCircle className="h-10 w-10" />
+              <XCircle className="h-16 w-16" />
             )}
             <div>
-              <p className="text-white/80 text-sm mb-1">Plant Identified</p>
-              <h2 className="text-2xl font-bold">{plantName}</h2>
+              <p className="text-white/80 text-sm mb-1 uppercase tracking-wider">Plant Identified</p>
+              <h2 className="text-3xl md:text-4xl font-bold animate-in fade-in zoom-in duration-500">{plantName}</h2>
             </div>
           </div>
         </div>
         
         <CardContent className="p-6">
           {/* Condition */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          <div className="mb-6 text-center">
+            <h3 className="text-lg font-semibold mb-2 flex items-center justify-center gap-2">
               <Leaf className="h-5 w-5 text-primary" />
               Condition
             </h3>
-            <p className="text-xl font-medium">{condition}</p>
+            <p className="text-2xl font-bold">{condition}</p>
           </div>
 
           {/* Stats Grid */}
@@ -178,78 +203,155 @@ export function SimplifiedResult({
         </CardContent>
       </Card>
 
-      {/* Action Plan */}
-      {actionPlan && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Wrench className="h-5 w-5 text-primary" />
-              Action Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Immediate Actions */}
-            {actionPlan.immediate_actions?.length > 0 && (
-              <div>
-                <h4 className="font-medium text-destructive mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-destructive rounded-full"></span>
-                  Immediate Actions (Do Now)
-                </h4>
-                <ul className="space-y-2">
-                  {actionPlan.immediate_actions.map((action, idx) => (
-                    <li key={idx} className="flex items-start gap-3 p-3 bg-destructive/5 rounded-lg border border-destructive/20">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white text-xs font-medium flex-shrink-0">
-                        {idx + 1}
-                      </span>
-                      <p className="text-sm">{action}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      {/* Detailed Recommendations Tabs (like Soil Analysis) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sprout className="h-5 w-5 text-primary" />
+            Detailed Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="fertilizers">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="fertilizers">Fertilizers</TabsTrigger>
+              <TabsTrigger value="organic">Organic</TabsTrigger>
+              <TabsTrigger value="plan">Action Plan</TabsTrigger>
+            </TabsList>
 
-            {/* Short Term */}
-            {actionPlan.short_term?.length > 0 && (
-              <div>
-                <h4 className="font-medium text-warning mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-warning rounded-full"></span>
-                  Short Term (1-2 Weeks)
-                </h4>
-                <ul className="space-y-2">
-                  {actionPlan.short_term.map((action, idx) => (
-                    <li key={idx} className="flex items-start gap-3 p-3 bg-warning/5 rounded-lg border border-warning/20">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-warning text-white text-xs font-medium flex-shrink-0">
-                        {idx + 1}
-                      </span>
-                      <p className="text-sm">{action}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* Fertilizers Tab */}
+            <TabsContent value="fertilizers" className="mt-4 space-y-4">
+              {fertilizerRecommendations && fertilizerRecommendations.length > 0 ? (
+                fertilizerRecommendations.map((fert, idx) => (
+                  <div key={idx} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">{fert.name}</h4>
+                      <Badge variant={fert.type === "organic" ? "default" : "secondary"}>
+                        {fert.type}
+                      </Badge>
+                    </div>
+                    {fert.npk_ratio && (
+                      <p className="text-sm text-muted-foreground mb-2">NPK: {fert.npk_ratio}</p>
+                    )}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <p><strong>Dosage:</strong> {fert.dosage}</p>
+                      <p><strong>When:</strong> {fert.application_time}</p>
+                      <p className="col-span-2"><strong>Method:</strong> {fert.application_method}</p>
+                    </div>
+                    {fert.benefits && fert.benefits.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium">Benefits:</p>
+                        <ul className="text-sm text-muted-foreground">
+                          {fert.benefits.map((b, i) => (
+                            <li key={i} className="flex items-start gap-1">
+                              <CheckCircle className="h-3 w-3 text-success mt-1 flex-shrink-0" />
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No specific fertilizer recommendations available.</p>
+              )}
+            </TabsContent>
 
-            {/* Long Term */}
-            {actionPlan.long_term?.length > 0 && (
-              <div>
-                <h4 className="font-medium text-success mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-success rounded-full"></span>
-                  Long Term (Ongoing)
-                </h4>
-                <ul className="space-y-2">
-                  {actionPlan.long_term.map((action, idx) => (
-                    <li key={idx} className="flex items-start gap-3 p-3 bg-success/5 rounded-lg border border-success/20">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success text-white text-xs font-medium flex-shrink-0">
-                        {idx + 1}
-                      </span>
-                      <p className="text-sm">{action}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            {/* Organic Tab */}
+            <TabsContent value="organic" className="mt-4 space-y-4">
+              {organicAmendments && organicAmendments.length > 0 ? (
+                organicAmendments.map((amend, idx) => (
+                  <div key={idx} className="p-4 border rounded-lg">
+                    <h4 className="font-semibold mb-2">{amend.name}</h4>
+                    <p className="text-sm"><strong>Dosage:</strong> {amend.dosage}</p>
+                    <p className="text-sm"><strong>Method:</strong> {amend.application_method}</p>
+                    {amend.benefits && amend.benefits.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium">Benefits:</p>
+                        <ul className="text-sm text-muted-foreground">
+                          {amend.benefits.map((b, i) => (
+                            <li key={i} className="flex items-start gap-1">
+                              <Leaf className="h-3 w-3 text-success mt-1 flex-shrink-0" />
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No specific organic amendments available.</p>
+              )}
+            </TabsContent>
+
+            {/* Action Plan Tab */}
+            <TabsContent value="plan" className="mt-4 space-y-4">
+              {actionPlan && (
+                <>
+                  {actionPlan.immediate_actions?.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        Immediate Actions
+                      </h4>
+                      <ul className="space-y-2">
+                        {actionPlan.immediate_actions.map((action, idx) => (
+                          <li key={idx} className="flex items-start gap-3 p-3 bg-destructive/5 rounded-lg border border-destructive/20">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white text-xs font-medium flex-shrink-0">
+                              {idx + 1}
+                            </span>
+                            <p className="text-sm">{action}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {actionPlan.short_term?.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold flex items-center gap-2 mb-2">
+                        <Calendar className="h-4 w-4 text-warning" />
+                        Short Term (1-2 Weeks)
+                      </h4>
+                      <ul className="space-y-2">
+                        {actionPlan.short_term.map((action, idx) => (
+                          <li key={idx} className="flex items-start gap-3 p-3 bg-warning/5 rounded-lg border border-warning/20">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-warning text-white text-xs font-medium flex-shrink-0">
+                              {idx + 1}
+                            </span>
+                            <p className="text-sm">{action}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {actionPlan.long_term?.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-success" />
+                        Long Term (Ongoing)
+                      </h4>
+                      <ul className="space-y-2">
+                        {actionPlan.long_term.map((action, idx) => (
+                          <li key={idx} className="flex items-start gap-3 p-3 bg-success/5 rounded-lg border border-success/20">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success text-white text-xs font-medium flex-shrink-0">
+                              {idx + 1}
+                            </span>
+                            <p className="text-sm">{action}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Improvements */}
       {improvements && (
@@ -262,7 +364,6 @@ export function SimplifiedResult({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Soil Management */}
               {improvements.soil_management?.length > 0 && (
                 <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/20">
                   <h4 className="font-medium text-secondary mb-3 flex items-center gap-2">
@@ -280,7 +381,6 @@ export function SimplifiedResult({
                 </div>
               )}
 
-              {/* Water Management */}
               {improvements.water_management?.length > 0 && (
                 <div className="p-4 bg-primary/5 rounded-lg border border-primary/15">
                   <h4 className="font-medium text-primary mb-3 flex items-center gap-2">
@@ -298,7 +398,6 @@ export function SimplifiedResult({
                 </div>
               )}
 
-              {/* Nutrient Management */}
               {improvements.nutrient_management?.length > 0 && (
                 <div className="p-4 bg-success/10 rounded-lg border border-success/20">
                   <h4 className="font-medium text-success mb-3 flex items-center gap-2">
@@ -316,7 +415,6 @@ export function SimplifiedResult({
                 </div>
               )}
 
-              {/* Pest Prevention */}
               {improvements.pest_prevention?.length > 0 && (
                 <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
                   <h4 className="font-medium text-warning mb-3 flex items-center gap-2">
@@ -333,7 +431,6 @@ export function SimplifiedResult({
                   </ul>
                 </div>
               )}
-
             </div>
           </CardContent>
         </Card>

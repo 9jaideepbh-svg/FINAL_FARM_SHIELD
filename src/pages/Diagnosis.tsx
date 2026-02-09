@@ -221,6 +221,8 @@ export default function Diagnosis() {
               severity={result.severity}
               diagnosisDate={result.diagnosis_date}
               lowConfidenceWarning={result.low_confidence_warning}
+              fertilizerRecommendations={(result as any).fertilizer_recommendations}
+              organicAmendments={(result as any).organic_amendments}
             />
 
             <div className="flex justify-center">

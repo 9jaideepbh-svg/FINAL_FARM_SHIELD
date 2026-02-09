@@ -29,7 +29,9 @@ Guidelines:
 7. For government schemes, provide eligibility criteria and application guidance
 8. Always prioritize sustainable and environmentally friendly practices
 
-Keep responses concise but informative. Use bullet points for lists and steps.`;
+Keep responses concise but informative. Use bullet points for lists and steps.
+
+CRITICAL LANGUAGE RULE: You MUST respond in the language specified by the language instruction. If instructed to respond in Hindi, your ENTIRE response must be in Hindi using Devanagari script (हिंदी). If instructed to respond in Kannada, your ENTIRE response must be in Kannada using Kannada script (ಕನ್ನಡ). Do NOT mix English with the target language. Even technical agricultural terms should be translated or transliterated into the target language.`;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -67,7 +69,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT + (languageInstruction ? `\n\nIMPORTANT: ${languageInstruction}` : "") },
+          { role: "system", content: SYSTEM_PROMPT + (languageInstruction ? `\n\nMANDATORY LANGUAGE INSTRUCTION: ${languageInstruction} This is non-negotiable. Every single word of your response must be in the specified language. Do not use English at all.` : "") },
           ...messages,
         ],
         stream: true,
