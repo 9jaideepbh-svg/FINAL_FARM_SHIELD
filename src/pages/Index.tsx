@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import heroVideo from "@/assets/hero-video.mp4";
 
 const features = [
@@ -38,16 +38,98 @@ const features = [
   },
 ];
 
+function useStormAudio() {
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const nodesRef = useRef<{ rain: AudioBufferSourceNode | null; gainNode: GainNode | null }>({ rain: null, gainNode: null });
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const createRainBuffer = useCallback((ctx: AudioContext) => {
+    const sampleRate = ctx.sampleRate;
+    const duration = 4;
+    const buffer = ctx.createBuffer(2, sampleRate * duration, sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = buffer.getChannelData(ch);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.3;
+      }
+    }
+    return buffer;
+  }, []);
+
+  const playThunder = useCallback((ctx: AudioContext, master: GainNode) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 80 + Math.random() * 60;
+    osc.type = "sawtooth";
+    osc.frequency.value = 30 + Math.random() * 30;
+    gain.gain.setValueAtTime(0.4 + Math.random() * 0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5 + Math.random());
+    osc.connect(filter).connect(gain).connect(master);
+    osc.start();
+    osc.stop(ctx.currentTime + 2.5);
+  }, []);
+
+  const start = useCallback(() => {
+    if (audioCtxRef.current) return;
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0.5;
+    gainNode.connect(ctx.destination);
+    nodesRef.current.gainNode = gainNode;
+
+    // Rain noise through bandpass
+    const rainBuffer = createRainBuffer(ctx);
+    const source = ctx.createBufferSource();
+    source.buffer = rainBuffer;
+    source.loop = true;
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = "bandpass";
+    bandpass.frequency.value = 800;
+    bandpass.Q.value = 0.5;
+    source.connect(bandpass).connect(gainNode);
+    source.start();
+    nodesRef.current.rain = source;
+
+    // Periodic thunder
+    playThunder(ctx, gainNode);
+    intervalRef.current = setInterval(() => {
+      if (audioCtxRef.current) playThunder(audioCtxRef.current, gainNode);
+    }, 4000 + Math.random() * 4000);
+  }, [createRainBuffer, playThunder]);
+
+  const stop = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    nodesRef.current.rain?.stop();
+    audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+    nodesRef.current = { rain: null, gainNode: null };
+  }, []);
+
+  useEffect(() => () => stop(), [stop]);
+
+  return { start, stop };
+}
+
 export default function Index() {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
+  const storm = useStormAudio();
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(!isMuted);
+    if (isMuted) {
+      storm.start();
+    } else {
+      storm.stop();
     }
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+    }
+    setIsMuted(!isMuted);
   };
 
   return (
@@ -79,10 +161,6 @@ export default function Index() {
         {/* Content Overlay */}
         <div className="relative z-10 flex items-center justify-center h-full">
           <div className="text-center px-4 max-w-3xl">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight text-white drop-shadow-lg">
-              Make Agriculture Easy with{" "}
-              <span className="text-[hsl(45,100%,51%)]">Farm Shield</span>
-            </h1>
             <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto drop-shadow">
               Advanced AI plant disease diagnosis that helps farmers identify problems early,
               get treatment recommendations, and protect their harvest.
@@ -95,7 +173,7 @@ export default function Index() {
                 </Link>
               </Button>
               {user && (
-                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10" asChild>
+                <Button size="lg" className="bg-primary text-primary-foreground border-primary hover:bg-primary/80" asChild>
                   <Link to="/history">
                     <History className="mr-2 h-4 w-4" />
                     View History
