@@ -158,29 +158,23 @@ export default function Index() {
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
 
-        {/* Content Overlay */}
-        <div className="relative z-10 flex items-center justify-center h-full">
-          <div className="text-center px-4 max-w-3xl">
-            <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto drop-shadow">
-              Advanced AI plant disease diagnosis that helps farmers identify problems early,
-              get treatment recommendations, and protect their harvest.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild>
-                <Link to={user ? "/diagnosis" : "/auth?tab=signup"}>
-                  {user ? "Start Diagnosis" : "Get Started Free"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
+        {/* Content Overlay - buttons at bottom */}
+        <div className="relative z-10 flex items-end justify-center h-full pb-12 md:pb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" asChild>
+              <Link to={user ? "/diagnosis" : "/auth?tab=signup"}>
+                {user ? "Start Diagnosis" : "Get Started Free"}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            {user && (
+              <Button size="lg" className="bg-primary text-primary-foreground border-primary hover:bg-primary/80" asChild>
+                <Link to="/history">
+                  <History className="mr-2 h-4 w-4" />
+                  View History
                 </Link>
               </Button>
-              {user && (
-                <Button size="lg" className="bg-primary text-primary-foreground border-primary hover:bg-primary/80" asChild>
-                  <Link to="/history">
-                    <History className="mr-2 h-4 w-4" />
-                    View History
-                  </Link>
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </section>
