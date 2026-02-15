@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.price-forecast]
 verify_jwt = false
+
+[functions.farmer-blog]
+verify_jwt = false
