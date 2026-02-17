@@ -52,25 +52,40 @@ const categoryFilters = [
   { id: "policy", label: "Policy", icon: <Lightbulb className="h-4 w-4" /> },
 ];
 
+const placeholderData: BlogData = {
+  edition_date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
+  headline: "Today's Agriculture Headlines — Loading latest news...",
+  articles: [
+    { id: "p1", title: "PM-Kisan 17th Installment Released for 9.5 Crore Farmers", summary: "The government has released the latest installment of PM-Kisan Samman Nidhi benefiting crores of farmers across India.", content: "", category: "scheme", source: "Ministry of Agriculture", region: "All India", image_emoji: "🏛️", published_time: "Just now", tags: ["PM-Kisan", "Subsidy"], is_breaking: true },
+    { id: "p2", title: "Drone Technology Revolutionizes Pesticide Spraying in Punjab", summary: "Farmers in Punjab adopt drone-based spraying reducing chemical usage by 30% and saving labor costs.", content: "", category: "innovation", source: "ICAR", region: "Punjab", image_emoji: "🤖", published_time: "1 hour ago", tags: ["Drones", "AgriTech"], is_breaking: false },
+    { id: "p3", title: "Organic Farmer from Kerala Earns ₹15 Lakh from 2 Acres", summary: "A success story of integrated organic farming combining spices, vegetables and poultry.", content: "", category: "success_story", source: "Krishi Jagran", region: "Kerala", image_emoji: "🌾", published_time: "2 hours ago", tags: ["Organic", "Success"], is_breaking: false },
+    { id: "p4", title: "Tomato Prices Surge 40% Across Major Mandis", summary: "Supply shortage due to unseasonal rains pushes tomato prices up significantly in wholesale markets.", content: "", category: "market", source: "Agmarknet", region: "All India", image_emoji: "📈", published_time: "3 hours ago", tags: ["Prices", "Tomato"], is_breaking: false },
+    { id: "p5", title: "IMD Forecasts Above Normal Monsoon for 2026", summary: "Indian Meteorological Department predicts good rainfall season, boosting kharif crop prospects.", content: "", category: "weather", source: "IMD", region: "All India", image_emoji: "🌧️", published_time: "4 hours ago", tags: ["Monsoon", "Weather"], is_breaking: false },
+    { id: "p6", title: "Government Raises MSP for Kharif Crops by 5-7%", summary: "Cabinet approves higher minimum support prices for paddy, pulses, and oilseeds for the upcoming season.", content: "", category: "policy", source: "PIB", region: "All India", image_emoji: "📋", published_time: "5 hours ago", tags: ["MSP", "Policy"], is_breaking: false },
+  ],
+};
+
 export default function FarmerBlog() {
-  const [blogData, setBlogData] = useState<BlogData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [blogData, setBlogData] = useState<BlogData>(placeholderData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingFresh, setIsFetchingFresh] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
   const { toast } = useToast();
   const cacheRef = useRef<Record<string, BlogData>>({});
+  const hasFetchedRef = useRef(false);
 
-  const fetchBlog = useCallback(async (category?: string) => {
+  const fetchBlog = useCallback(async (category?: string, isBackground = false) => {
     const cat = category || selectedCategory;
     
-    // Use cache if available
     if (cacheRef.current[cat]) {
       setBlogData(cacheRef.current[cat]);
-      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    if (!isBackground) setIsLoading(true);
+    else setIsFetchingFresh(true);
+
     try {
       const { data, error } = await supabase.functions.invoke("farmer-blog", {
         body: { category: cat },
@@ -79,19 +94,26 @@ export default function FarmerBlog() {
       setBlogData(data);
       cacheRef.current[cat] = data;
     } catch (err: any) {
-      toast({ title: "Failed to load news", description: err.message, variant: "destructive" });
+      if (!isBackground) {
+        toast({ title: "Failed to load news", description: err.message, variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
+      setIsFetchingFresh(false);
     }
   }, [selectedCategory, toast]);
 
+  // Fetch fresh data in background on first mount
   useEffect(() => {
-    fetchBlog();
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchBlog("all", true);
+    }
   }, []);
 
   const handleRefresh = () => {
-    cacheRef.current = {}; // Clear cache
-    fetchBlog();
+    cacheRef.current = {};
+    fetchBlog(selectedCategory);
   };
 
   const handleCategoryChange = (cat: string) => {
@@ -138,18 +160,22 @@ export default function FarmerBlog() {
                 onClick={handleRefresh}
                 disabled={isLoading}
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-            </div>
+              <RefreshCw className={`h-4 w-4 ${isLoading || isFetchingFresh ? "animate-spin" : ""}`} />
+              {isFetchingFresh ? "Updating..." : "Refresh"}
+            </Button>
+          </div>
 
-            {/* Headline Banner */}
-            {blogData?.headline && (
-              <div className="mt-6 bg-card/80 backdrop-blur-sm rounded-2xl p-5 border border-border/50 shadow-sm">
-                <p className="text-lg font-bold text-foreground leading-snug">{blogData.headline}</p>
-                <p className="text-xs text-muted-foreground mt-1">{blogData.edition_date}</p>
+          {/* Headline Banner */}
+          {blogData?.headline && (
+            <div className="mt-6 bg-card/80 backdrop-blur-sm rounded-2xl p-5 border border-border/50 shadow-sm">
+              <p className="text-lg font-bold text-foreground leading-snug">{blogData.headline}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-muted-foreground">{blogData.edition_date}</p>
+                {isFetchingFresh && <span className="text-xs text-primary animate-pulse">• Loading fresh content...</span>}
               </div>
-            )}
+            </div>
+          )}
+
           </div>
         </div>
 
@@ -172,17 +198,7 @@ export default function FarmerBlog() {
             ))}
           </div>
 
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold text-foreground">Generating today's edition...</p>
-                <p className="text-sm text-muted-foreground mt-1">Curating latest agricultural news with AI</p>
-              </div>
-            </div>
-          ) : (
+          {
             <div className="space-y-6">
               {/* Breaking News */}
               {breakingArticle && (
@@ -232,7 +248,7 @@ export default function FarmerBlog() {
                 </div>
               )}
             </div>
-          )}
+          }
         </div>
       </div>
     </Layout>

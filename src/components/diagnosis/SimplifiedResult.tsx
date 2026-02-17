@@ -137,6 +137,12 @@ export function SimplifiedResult({
             <div>
               <p className="text-white/80 text-sm mb-1 uppercase tracking-wider">Plant Identified</p>
               <h2 className="text-3xl md:text-4xl font-bold animate-in fade-in zoom-in duration-500">{plantName}</h2>
+              {isHealthy && (
+                <div className="mt-3 inline-block bg-white/20 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/30">
+                  <p className="text-white/90 text-sm font-medium uppercase tracking-wider">Status</p>
+                  <p className="text-2xl font-extrabold text-white">✅ Healthy Plant</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -148,7 +154,12 @@ export function SimplifiedResult({
               <Leaf className="h-5 w-5 text-primary" />
               Condition
             </h3>
-            <p className="text-2xl font-bold">{condition}</p>
+            <p className={cn("text-2xl font-bold", isHealthy && "text-success")}>{condition}</p>
+            {isHealthy && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Scientific Name: <span className="italic font-medium">{plantName}</span>
+              </p>
+            )}
           </div>
 
           {/* Stats Grid */}
