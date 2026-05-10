@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
-import { Leaf, Camera, History, ArrowRight, Shield, Zap, Globe, Volume2, VolumeX } from "lucide-react";
+import { Leaf, Camera, History, ArrowRight, Shield, Zap, Globe, Volume2, VolumeX, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import { useRef, useState, useEffect, useCallback } from "react";
-import heroVideo from "@/assets/hero-video.mp4";
 
 const features = [
   {
@@ -35,6 +34,13 @@ const features = [
     description: "Access your complete diagnosis history to monitor crop health over time.",
     color: "text-primary",
     bgColor: "bg-primary/10",
+  },
+  {
+    icon: User,
+    title: "Krishi Setu",
+    description: "Connect farmers with agricultural labor instantly. Your farm's bridge to skilled workers.",
+    color: "text-amber-600",
+    bgColor: "bg-amber-600/10",
   },
 ];
 
@@ -81,7 +87,6 @@ function useStormAudio() {
     gainNode.connect(ctx.destination);
     nodesRef.current.gainNode = gainNode;
 
-    // Rain noise through bandpass
     const rainBuffer = createRainBuffer(ctx);
     const source = ctx.createBufferSource();
     source.buffer = rainBuffer;
@@ -94,7 +99,6 @@ function useStormAudio() {
     source.start();
     nodesRef.current.rain = source;
 
-    // Periodic thunder
     playThunder(ctx, gainNode);
     intervalRef.current = setInterval(() => {
       if (audioCtxRef.current) playThunder(audioCtxRef.current, gainNode);
@@ -135,16 +139,20 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Video Section */}
-      <section className="relative w-full h-[70vh] md:h-[85vh] overflow-hidden">
-        {/* Video Background */}
+      <section className="relative w-full overflow-hidden" style={{ height: "clamp(400px, 70vh, 85vh)" }}>
+        {/* Video Background — served from /public to avoid bundling the 33MB file.
+            preload="none" defers network cost; autoPlay triggers after canplay.
+            fetchpriority="high" signals browser this is important. */}
         <video
           ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover"
-          src={heroVideo}
+          src="/hero-video.mp4"
           autoPlay
           loop
           muted
           playsInline
+          preload="none"
+          aria-hidden="true"
         />
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/50" />
@@ -152,44 +160,56 @@ export default function Index() {
         {/* Mute Toggle */}
         <button
           onClick={toggleMute}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
-          aria-label={isMuted ? "Unmute" : "Mute"}
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          aria-label={isMuted ? "Unmute background sound" : "Mute background sound"}
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
 
-        {/* Content Overlay - buttons at bottom */}
-        <div className="relative z-10 flex items-end justify-center h-full pb-12 md:pb-16">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
+        {/* Content Overlay */}
+        <div className="relative z-10 flex flex-col items-center justify-end h-full pb-10 sm:pb-14 md:pb-16 px-4 text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-3">
+            Smart Farming Starts Here
+          </h1>
+          <p className="text-white/80 text-sm sm:text-base md:text-lg max-w-xl mb-8 drop-shadow">
+            AI-powered plant diagnosis, price forecasting &amp; labour marketplace for Indian farmers.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center w-full sm:w-auto">
+            <Button size="lg" className="w-full sm:w-auto" asChild>
               <Link to={user ? "/diagnosis" : "/auth?tab=signup"}>
                 {user ? "Start Diagnosis" : "Get Started Free"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             {user && (
-              <Button size="lg" className="bg-primary text-primary-foreground border-primary hover:bg-primary/80" asChild>
+              <Button size="lg" className="w-full sm:w-auto bg-primary text-primary-foreground border-primary hover:bg-primary/80" asChild>
                 <Link to="/history">
                   <History className="mr-2 h-4 w-4" />
                   View History
                 </Link>
               </Button>
             )}
+            <Button size="lg" className="w-full sm:w-auto bg-amber-600 text-white hover:bg-amber-700" asChild>
+              <Link to="/krishi-setu">
+                <User className="mr-2 h-4 w-4" />
+                Krishi Setu
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How Farm Shield Works</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our AI-powered platform provides accurate plant disease diagnosis in seconds, 
+      <section className="py-16 sm:py-20 bg-muted/30">
+        <div className="container px-4">
+          <div className="text-center mb-10 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">How Farm Shield Works</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base">
+              Our AI-powered platform provides accurate plant disease diagnosis in seconds,
               helping you take action before it's too late.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
             {features.map((feature, idx) => (
               <Card key={idx} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader>
@@ -210,16 +230,16 @@ export default function Index() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
-        <div className="container">
+      <section className="py-16 sm:py-20">
+        <div className="container px-4">
           <Card className="overflow-hidden">
             <div className="grid md:grid-cols-2">
               <div className="p-8 md:p-12 flex flex-col justify-center">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4">
                   Ready to protect your crops?
                 </h2>
-                <p className="text-muted-foreground mb-6">
-                  Join thousands of farmers using Farm Shield to diagnose plant diseases 
+                <p className="text-muted-foreground mb-6 text-sm sm:text-base">
+                  Join thousands of farmers using Farm Shield to diagnose plant diseases
                   and get expert treatment recommendations.
                 </p>
                 <div>
@@ -231,8 +251,8 @@ export default function Index() {
                   </Button>
                 </div>
               </div>
-              <div className="relative h-64 md:h-auto bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Leaf className="h-32 w-32 text-primary/30" />
+              <div className="relative h-48 md:h-auto bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <Leaf className="h-24 w-24 md:h-32 md:w-32 text-primary/30" />
               </div>
             </div>
           </Card>

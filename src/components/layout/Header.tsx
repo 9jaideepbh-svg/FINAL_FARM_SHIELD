@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/soil", label: "Soil Analysis" },
   { href: "/weather", label: "Weather" },
   { href: "/schemes", label: "Schemes" },
+  { href: "/krishi-setu", label: "Krishi Setu" },
 ];
 
 export function Header() {

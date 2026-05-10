@@ -13,6 +13,7 @@ import Soil from "./pages/Soil";
 import Weather from "./pages/Weather";
 import PriceForecast from "./pages/PriceForecast";
 import FarmerBlog from "./pages/FarmerBlog";
+import KrishiSetu from "./pages/KrishiSetu/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/weather" element={<Weather />} />
             <Route path="/price-forecast" element={<PriceForecast />} />
             <Route path="/farmer-blog" element={<FarmerBlog />} />
+            <Route path="/krishi-setu/*" element={<KrishiSetu />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
