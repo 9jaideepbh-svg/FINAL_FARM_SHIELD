@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { Leaf, Camera, History, ArrowRight, Shield, Zap, Globe, Volume2, VolumeX, User } from "lucide-react";
+import { Leaf, Camera, History, ArrowRight, Shield, Zap, Globe, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { HeroGrass } from "@/components/HeroGrass";
 
 const features = [
   {
@@ -44,158 +44,63 @@ const features = [
   },
 ];
 
-function useStormAudio() {
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const nodesRef = useRef<{ rain: AudioBufferSourceNode | null; gainNode: GainNode | null }>({ rain: null, gainNode: null });
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const createRainBuffer = useCallback((ctx: AudioContext) => {
-    const sampleRate = ctx.sampleRate;
-    const duration = 4;
-    const buffer = ctx.createBuffer(2, sampleRate * duration, sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-      const data = buffer.getChannelData(ch);
-      for (let i = 0; i < data.length; i++) {
-        data[i] = (Math.random() * 2 - 1) * 0.3;
-      }
-    }
-    return buffer;
-  }, []);
-
-  const playThunder = useCallback((ctx: AudioContext, master: GainNode) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.value = 80 + Math.random() * 60;
-    osc.type = "sawtooth";
-    osc.frequency.value = 30 + Math.random() * 30;
-    gain.gain.setValueAtTime(0.4 + Math.random() * 0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5 + Math.random());
-    osc.connect(filter).connect(gain).connect(master);
-    osc.start();
-    osc.stop(ctx.currentTime + 2.5);
-  }, []);
-
-  const start = useCallback(() => {
-    if (audioCtxRef.current) return;
-    const ctx = new AudioContext();
-    audioCtxRef.current = ctx;
-
-    const gainNode = ctx.createGain();
-    gainNode.gain.value = 0.5;
-    gainNode.connect(ctx.destination);
-    nodesRef.current.gainNode = gainNode;
-
-    const rainBuffer = createRainBuffer(ctx);
-    const source = ctx.createBufferSource();
-    source.buffer = rainBuffer;
-    source.loop = true;
-    const bandpass = ctx.createBiquadFilter();
-    bandpass.type = "bandpass";
-    bandpass.frequency.value = 800;
-    bandpass.Q.value = 0.5;
-    source.connect(bandpass).connect(gainNode);
-    source.start();
-    nodesRef.current.rain = source;
-
-    playThunder(ctx, gainNode);
-    intervalRef.current = setInterval(() => {
-      if (audioCtxRef.current) playThunder(audioCtxRef.current, gainNode);
-    }, 4000 + Math.random() * 4000);
-  }, [createRainBuffer, playThunder]);
-
-  const stop = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    nodesRef.current.rain?.stop();
-    audioCtxRef.current?.close();
-    audioCtxRef.current = null;
-    nodesRef.current = { rain: null, gainNode: null };
-  }, []);
-
-  useEffect(() => () => stop(), [stop]);
-
-  return { start, stop };
-}
-
 export default function Index() {
   const { user } = useAuth();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true);
-  const storm = useStormAudio();
-
-  const toggleMute = () => {
-    if (isMuted) {
-      storm.start();
-    } else {
-      storm.stop();
-    }
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-    }
-    setIsMuted(!isMuted);
-  };
 
   return (
     <Layout>
-      {/* Hero Video Section */}
-      <section className="relative w-full overflow-hidden" style={{ height: "clamp(400px, 70vh, 85vh)" }}>
-        {/* Video Background — served from /public to avoid bundling the 33MB file.
-            preload="none" defers network cost; autoPlay triggers after canplay.
-            fetchpriority="high" signals browser this is important. */}
-        <video
-          ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover"
-          src="/hero-video.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="none"
-          aria-hidden="true"
-        />
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-black/50" />
-
-        {/* Mute Toggle */}
-        <button
-          onClick={toggleMute}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-          aria-label={isMuted ? "Unmute background sound" : "Mute background sound"}
-        >
-          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-        </button>
-
+      {/* Hero Section */}
+      <section className="relative w-full overflow-hidden flex flex-col items-center justify-center" style={{ height: "clamp(400px, 70vh, 85vh)" }}>
+        <HeroGrass />
+        
         {/* Content Overlay */}
-        <div className="relative z-10 flex flex-col items-center justify-end h-full pb-10 sm:pb-14 md:pb-16 px-4 text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-3">
-            Smart Farming Starts Here
+        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center pointer-events-none">
+          <div className="mb-6 opacity-0 animate-[fadeUp_1s_ease_0.2s_forwards]">
+            <svg viewBox="0 0 48 48" fill="none" className="w-12 h-12 mx-auto">
+              <path d="M24 4L8 12v10c0 10.5 6.8 20.3 16 22.5 9.2-2.2 16-12 16-22.5V12L24 4z" fill="#3d6b1b" fillOpacity="0.12" stroke="#3d6b1b" strokeWidth="2"/>
+              <path d="M18 24l4 4 8-8" stroke="#3d6b1b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black tracking-widest text-[#2d5a10] mb-6 opacity-0 animate-[fadeUp_1s_ease_0.4s_forwards]">
+            FARM SHIELD
           </h1>
-          <p className="text-white/80 text-sm sm:text-base md:text-lg max-w-xl mb-8 drop-shadow">
-            AI-powered plant diagnosis, price forecasting &amp; labour marketplace for Indian farmers.
+          <div className="w-12 h-1 bg-[#5a7a2e]/30 rounded-full mb-6 mx-auto opacity-0 animate-[fadeUp_1s_ease_0.6s_forwards]"></div>
+          <p className="text-[#2d3c1e]/80 text-lg md:text-xl font-medium max-w-2xl mb-10 leading-relaxed opacity-0 animate-[fadeUp_1s_ease_0.8s_forwards]">
+            AI-powered agricultural intelligence for Indian farmers — protecting crops, predicting risks, and cultivating smarter harvests.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto" asChild>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full sm:w-auto pointer-events-auto opacity-0 animate-[fadeUp_1s_ease_1s_forwards]">
+            <Button size="lg" className="w-full sm:w-auto bg-[#3d6b1b] hover:bg-[#2d5a10] text-white rounded-full px-8 py-6 shadow-lg shadow-[#3d6b1b]/20" asChild>
               <Link to={user ? "/diagnosis" : "/auth?tab=signup"}>
-                {user ? "Start Diagnosis" : "Get Started Free"}
+                {user ? "Start Diagnosis" : "Get Started"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             {user && (
-              <Button size="lg" className="w-full sm:w-auto bg-primary text-primary-foreground border-primary hover:bg-primary/80" asChild>
+              <Button size="lg" className="w-full sm:w-auto bg-white/40 hover:bg-white/60 text-[#2d5a10] backdrop-blur-md border border-white/40 rounded-full px-8 py-6 transition-all" asChild>
                 <Link to="/history">
                   <History className="mr-2 h-4 w-4" />
                   View History
                 </Link>
               </Button>
             )}
-            <Button size="lg" className="w-full sm:w-auto bg-amber-600 text-white hover:bg-amber-700" asChild>
+            <Button size="lg" className="w-full sm:w-auto bg-white/40 hover:bg-white/60 text-[#2d5a10] backdrop-blur-md border border-white/40 rounded-full px-8 py-6 transition-all" asChild>
               <Link to="/krishi-setu">
                 <User className="mr-2 h-4 w-4" />
                 Krishi Setu
               </Link>
             </Button>
           </div>
+        </div>
+
+        {/* Keyboard Hint */}
+        <div className="absolute bottom-6 right-6 z-10 hidden sm:flex items-center gap-2 text-xs font-medium text-[#2d3c1e]/40 tracking-wider pointer-events-none opacity-0 animate-[fadeUp_1s_ease_1.8s_forwards]">
+          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">W</span>
+          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">A</span>
+          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">S</span>
+          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">D</span>
+          <span className="ml-1">to move</span>
+          <span className="flex items-center justify-center w-12 h-6 ml-1 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">Space</span>
+          <span className="ml-1">jump</span>
         </div>
       </section>
 

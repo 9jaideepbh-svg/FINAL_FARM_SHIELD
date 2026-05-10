@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+	<title>Remix: GPU Grass Field</title>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+	<style>
+		*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+		html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+		canvas { display: block; }
+
+		/* Hero Overlay */
+		#hero-overlay {
+			position: fixed;
+			top: 0; left: 0;
+			width: 100%; height: 100%;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			z-index: 10;
+			pointer-events: none;
+			padding: 20px;
+		}
+
+		.hero-content {
+			text-align: center;
+			max-width: 900px;
+		}
+
+		/* Shield icon */
+		.shield-icon {
+			width: 48px;
+			height: 48px;
+			margin: 0 auto 28px;
+			opacity: 0;
+			animation: fadeUp 1s ease 0.3s forwards;
+		}
+		.shield-icon svg {
+			width: 100%; height: 100%;
+			filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+		}
+
+		.brand-name {
+			font-size: clamp(3rem, 8vw, 7.5rem);
+			font-weight: 900;
+			letter-spacing: 0.06em;
+			line-height: 1;
+			color: #1a2e0a;
+			text-shadow: 0 1px 2px rgba(255,255,255,0.15);
+			opacity: 0;
+			animation: fadeUp 1s ease 0.5s forwards;
+		}
+
+		.divider {
+			width: 60px;
+			height: 2px;
+			background: #5a7a2e;
+			margin: 24px auto;
+			border-radius: 1px;
+			opacity: 0;
+			animation: fadeUp 0.8s ease 0.8s forwards;
+		}
+
+		.tagline {
+			font-size: clamp(0.9rem, 2.2vw, 1.3rem);
+			font-weight: 400;
+			line-height: 1.6;
+			color: #3d4a2c;
+			max-width: 560px;
+			margin: 0 auto;
+			letter-spacing: 0.02em;
+			opacity: 0;
+			animation: fadeUp 1s ease 1s forwards;
+		}
+
+		.cta-row {
+			margin-top: 36px;
+			display: flex;
+			gap: 14px;
+			justify-content: center;
+			flex-wrap: wrap;
+			opacity: 0;
+			animation: fadeUp 1s ease 1.2s forwards;
+			pointer-events: auto;
+		}
+
+		.cta-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 14px 32px;
+			font-family: 'Inter', sans-serif;
+			font-size: 0.875rem;
+			font-weight: 600;
+			letter-spacing: 0.03em;
+			border-radius: 8px;
+			border: none;
+			cursor: pointer;
+			transition: all 0.25s ease;
+			text-decoration: none;
+		}
+		.cta-btn.primary {
+			background: #3d6b1b;
+			color: #f0f5e8;
+		}
+		.cta-btn.primary:hover {
+			background: #4a7f22;
+			transform: translateY(-1px);
+		}
+		.cta-btn.secondary {
+			background: rgba(255,255,255,0.55);
+			color: #2a3d18;
+			border: 1px solid rgba(90,122,46,0.25);
+		}
+		.cta-btn.secondary:hover {
+			background: rgba(255,255,255,0.75);
+			transform: translateY(-1px);
+		}
+
+		/* Bottom hint */
+		.scroll-hint {
+			position: fixed;
+			bottom: 28px;
+			left: 50%;
+			transform: translateX(-50%);
+			z-index: 10;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-family: 'Inter', sans-serif;
+			font-size: 0.75rem;
+			font-weight: 500;
+			color: rgba(45,60,30,0.5);
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			opacity: 0;
+			animation: fadeUp 1s ease 1.6s forwards;
+		}
+		.scroll-hint .dot {
+			width: 5px; height: 5px;
+			background: rgba(90,122,46,0.4);
+			border-radius: 50%;
+			animation: pulse 2s ease infinite;
+		}
+
+		/* Nav pill */
+		.nav-pill {
+			position: fixed;
+			top: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			z-index: 20;
+			display: flex;
+			align-items: center;
+			gap: 24px;
+			padding: 10px 24px;
+			background: rgba(255,255,255,0.45);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			border: 1px solid rgba(255,255,255,0.35);
+			border-radius: 40px;
+			font-size: 0.8rem;
+			font-weight: 500;
+			color: #2a3d18;
+			opacity: 0;
+			animation: fadeDown 0.8s ease 0.2s forwards;
+		}
+		.nav-pill a {
+			text-decoration: none;
+			color: inherit;
+			transition: color 0.2s;
+			cursor: pointer;
+		}
+		.nav-pill a:hover { color: #5a7a2e; }
+		.nav-logo {
+			font-weight: 700;
+			font-size: 0.85rem;
+			letter-spacing: 0.04em;
+			color: #2d5a10;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+		.nav-logo svg { width: 18px; height: 18px; }
+
+		/* Keyboard hint */
+		.controls-hint {
+			position: fixed;
+			bottom: 28px;
+			right: 20px;
+			z-index: 10;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-family: 'Inter', sans-serif;
+			font-size: 0.7rem;
+			font-weight: 500;
+			color: rgba(45,60,30,0.4);
+			letter-spacing: 0.03em;
+			opacity: 0;
+			animation: fadeUp 1s ease 1.8s forwards;
+		}
+		.key {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 22px; height: 22px;
+			background: rgba(255,255,255,0.45);
+			border: 1px solid rgba(90,122,46,0.2);
+			border-radius: 4px;
+			font-size: 0.6rem;
+			font-weight: 600;
+			color: rgba(45,60,30,0.6);
+		}
+
+		@keyframes fadeUp {
+			from { opacity: 0; transform: translateY(16px); }
+			to   { opacity: 1; transform: translateY(0); }
+		}
+		@keyframes fadeDown {
+			from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+			to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+		}
+		@keyframes pulse {
+			0%, 100% { opacity: 0.4; }
+			50% { opacity: 1; }
+		}
+
+		@media (max-width: 600px) {
+			.nav-pill { padding: 8px 16px; gap: 14px; font-size: 0.72rem; }
+			.nav-pill .nav-links { display: none; }
+			.divider { width: 40px; margin: 18px auto; }
+			.cta-btn { padding: 12px 24px; font-size: 0.8rem; }
+			.controls-hint { display: none; }
+		}
+	</style>
+</head>
+
+<body>
+
+	<!-- Navigation -->
+	<nav class="nav-pill">
+		<span class="nav-logo">
+			<svg viewBox="0 0 24 24" fill="none" stroke="#2d5a10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M12 2L3 7v6c0 5.25 3.75 10.15 9 11.25 5.25-1.1 9-6 9-11.25V7l-9-5z"/>
+				<path d="M12 8v4m0 0l-2 2m2-2l2 2" stroke-width="1.5"/>
+			</svg>
+			FARM SHIELD
+		</span>
+		<span class="nav-links" style="display:flex;gap:20px;">
+			<a>Services</a>
+			<a>About</a>
+			<a>Contact</a>
+		</span>
+	</nav>
+
+	<!-- Hero Content -->
+	<div id="hero-overlay">
+		<div class="hero-content">
+			<div class="shield-icon">
+				<svg viewBox="0 0 48 48" fill="none">
+					<path d="M24 4L8 12v10c0 10.5 6.8 20.3 16 22.5 9.2-2.2 16-12 16-22.5V12L24 4z" fill="#3d6b1b" fill-opacity="0.12" stroke="#3d6b1b" stroke-width="2"/>
+					<path d="M18 24l4 4 8-8" stroke="#3d6b1b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</div>
+			<h1 class="brand-name">FARM SHIELD</h1>
+			<div class="divider"></div>
+			<p class="tagline">
+				AI-powered agricultural intelligence for Indian farmers — protecting crops, predicting risks, and cultivating smarter harvests.
+			</p>
+			<div class="cta-row">
+				<button class="cta-btn primary">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+					Get Started
+				</button>
+				<button class="cta-btn secondary">Learn More</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bottom hints -->
+	<div class="scroll-hint">
+		<span class="dot"></span>
+		Explore the field below
+	</div>
+
+	<div class="controls-hint">
+		<span class="key">W</span>
+		<span class="key">A</span>
+		<span class="key">S</span>
+		<span class="key">D</span>
+		<span style="margin-left:4px;">to move</span>
+		<span class="key" style="width:40px;margin-left:4px;">Space</span>
+		<span>jump</span>
+	</div>
+
+	<script type="module">
+		import * as THREE from 'three/webgpu';
+		import {
+			Fn, uniform, float, vec3, instancedArray, instanceIndex,
+			uv, positionGeometry, positionWorld,
+			sin, cos, pow, smoothstep, mix, sqrt, select, hash,
+			time, deltaTime, PI, mx_noise_float,
+		} from 'three/tsl';
+		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+		const BLADE_COUNT = 80000;
+		const FIELD_SIZE = 20;
+		const BACKGROUND_HEX = '#c8c4a0';
+		const GROUND_HEX = '#5a5534';
+		const BLADE_BASE_HEX = '#2a330e';
+		const BLADE_TIP_HEX = '#8ec438';
+
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color(BACKGROUND_HEX);
+
+		const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 100);
+		camera.position.set(0, 6, 14.5);
+
+		const renderer = new THREE.WebGPURenderer({ antialias: true });
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+		renderer.setSize(innerWidth, innerHeight);
+		document.body.appendChild(renderer.domElement);
+		await renderer.init();
+
+		const controls = new OrbitControls(camera, renderer.domElement);
+		controls.enableDamping = true;
+		controls.target.set(0, -0.75, 0);
+		controls.minDistance = 3;
+		controls.maxDistance = 25;
+
+		// ─── GPU Buffers ──────────────────────────────────────────────────────────────
+		const bladeData  = instancedArray(BLADE_COUNT, 'vec4');
+		const bendState  = instancedArray(BLADE_COUNT, 'vec4');
+		const bladeBound = instancedArray(BLADE_COUNT, 'float');
+
+		// ─── Uniforms ─────────────────────────────────────────────────────────────────
+		const mouseWorld    = uniform(new THREE.Vector3(99999, 0, 99999));
+		const mouseRadius   = uniform(2.2);
+		const mouseStrength = uniform(1.8);
+		const icoWorld      = uniform(new THREE.Vector3(99999, 0, 99999));
+		const icoRadius     = uniform(2.5);
+		const icoStrength   = uniform(2.0);
+
+		const grassDensity        = uniform(1);
+		const windSpeed           = uniform(1.8);
+		const windAmplitude       = uniform(0.2);
+		const bladeWidth          = uniform(1.6);
+		const bladeHeight         = uniform(0.65);
+		const bladeLean           = uniform(1.1);
+		const noiseAmplitude      = uniform(1.85);
+		const noiseFrequency      = uniform(0.3);
+		const noise2Amplitude     = uniform(0.2);
+		const noise2Frequency     = uniform(15);
+		const bladeColorVariation = uniform(0.93);
+		const bladeGradientFalloff= uniform(1.7);
+		const groundRadius        = uniform(9.2);
+		const groundFalloff       = uniform(1.6);
+		const bladeBaseColor      = uniform(new THREE.Color(BLADE_BASE_HEX));
+		const bladeTipColor       = uniform(new THREE.Color(BLADE_TIP_HEX));
+		const backgroundColor     = uniform(new THREE.Color(BACKGROUND_HEX));
+		const groundColor         = uniform(new THREE.Color(GROUND_HEX));
+
+		const noise2D = Fn(([x, z]) => mx_noise_float(vec3(x, float(0), z)).mul(0.5).add(0.5));
+
+		// ─── Compute Init ─────────────────────────────────────────────────────────────
+		const computeInit = Fn(() => {
+			const blade = bladeData.element(instanceIndex);
+			const col = instanceIndex.mod(283);
+			const row = instanceIndex.div(283);
+			const jx = hash(instanceIndex).sub(0.5);
+			const jz = hash(instanceIndex.add(7919)).sub(0.5);
+			const wx = col.toFloat().add(jx).div(float(283)).sub(0.5).mul(FIELD_SIZE);
+			const wz = row.toFloat().add(jz).div(float(283)).sub(0.5).mul(FIELD_SIZE);
+			blade.x.assign(wx);
+			blade.y.assign(wz);
+			blade.z.assign(hash(instanceIndex.add(1337)).mul(PI.mul(2)));
+			const n1 = noise2D(wx.mul(noiseFrequency), wz.mul(noiseFrequency));
+			const n2 = noise2D(wx.mul(noiseFrequency.mul(noise2Frequency)).add(50), wz.mul(noiseFrequency.mul(noise2Frequency)).add(50));
+			const clump = n1.mul(noiseAmplitude).sub(noise2Amplitude).add(n2.mul(noise2Amplitude).mul(2)).max(0);
+			blade.w.assign(clump);
+			const dist = sqrt(wx.mul(wx).add(wz.mul(wz)));
+			const edgeNoise = noise2D(wx.mul(0.25).add(100), wz.mul(0.25).add(100));
+			const maxR = float(8.0).add(edgeNoise.sub(0.5).mul(4.0));
+			const boundary = float(1).sub(smoothstep(maxR.sub(1.5), maxR, dist));
+			bladeBound.element(instanceIndex).assign(select(boundary.lessThan(0.05), float(0), boundary));
+		})().compute(BLADE_COUNT);
+
+		// ─── Compute Update ───────────────────────────────────────────────────────────
+		const computeUpdate = Fn(() => {
+			const blade = bladeData.element(instanceIndex);
+			const bend  = bendState.element(instanceIndex);
+			const bx = blade.x, bz = blade.y;
+
+			const w1 = sin(bx.mul(0.35).add(bz.mul(0.12)).add(time.mul(windSpeed)));
+			const w2 = sin(bx.mul(0.18).add(bz.mul(0.28)).add(time.mul(windSpeed.mul(0.67))).add(1.7));
+			const windX = w1.add(w2).mul(windAmplitude);
+			const windZ = w1.sub(w2).mul(windAmplitude.mul(0.55));
+			const lw = deltaTime.mul(4.0).saturate();
+			bend.x.assign(mix(bend.x, windX, lw));
+			bend.y.assign(mix(bend.y, windZ, lw));
+
+			const dx = bx.sub(mouseWorld.x), dz = bz.sub(mouseWorld.z);
+			const dist = sqrt(dx.mul(dx).add(dz.mul(dz))).add(0.0001);
+			const falloff = float(1).sub(dist.div(mouseRadius).saturate());
+			const influence = falloff.mul(falloff).mul(mouseStrength);
+			const pushX = dx.div(dist).mul(influence);
+			const pushZ = dz.div(dist).mul(influence);
+
+			const idx2 = bx.sub(icoWorld.x), idz2 = bz.sub(icoWorld.z);
+			const idist2 = sqrt(idx2.mul(idx2).add(idz2.mul(idz2))).add(0.0001);
+			const ifalloff2 = float(1).sub(idist2.div(icoRadius).saturate());
+			const iinfluence2 = ifalloff2.mul(ifalloff2).mul(icoStrength);
+			const ipushX = idx2.div(idist2).mul(iinfluence2);
+			const ipushZ = idz2.div(idist2).mul(iinfluence2);
+
+			const totalPushX = pushX.add(ipushX), totalPushZ = pushZ.add(ipushZ);
+			const targetMag  = sqrt(totalPushX.mul(totalPushX).add(totalPushZ.mul(totalPushZ)));
+			const currentMag = sqrt(bend.z.mul(bend.z).add(bend.w.mul(bend.w)));
+			const lm = select(targetMag.greaterThan(currentMag), deltaTime.mul(12.0), deltaTime.mul(1)).saturate();
+			bend.z.assign(mix(bend.z, totalPushX, lm));
+			bend.w.assign(mix(bend.w, totalPushZ, lm));
+		})().compute(BLADE_COUNT);
+
+		// ─── Blade Geometry ───────────────────────────────────────────────────────────
+		function createBladeGeometry() {
+			const segs = 5, W = 0.055, H = 1.0;
+			const verts = [], norms = [], uvArr = [], idx = [];
+			for (let i = 0; i <= segs; i++) {
+				const t = i / segs, y = t * H, hw = W * 0.5 * (1 - t * 0.82);
+				verts.push(-hw, y, 0, hw, y, 0);
+				norms.push(0, 0, 1, 0, 0, 1);
+				uvArr.push(0, t, 1, t);
+			}
+			for (let i = 0; i < segs; i++) { const b = i * 2; idx.push(b, b+1, b+2, b+1, b+3, b+2); }
+			const geo = new THREE.BufferGeometry();
+			geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+			geo.setAttribute('normal',   new THREE.Float32BufferAttribute(norms, 3));
+			geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvArr, 2));
+			geo.setIndex(idx);
+			return geo;
+		}
+
+		// ─── Grass Material ───────────────────────────────────────────────────────────
+		const grassMat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
+
+		grassMat.positionNode = Fn(() => {
+			const blade = bladeData.element(instanceIndex);
+			const bend  = bendState.element(instanceIndex);
+			const worldX = blade.x, worldZ = blade.y, rotY = blade.z;
+			const boundary = bladeBound.element(instanceIndex);
+			const visible = select(hash(instanceIndex.add(9999)).lessThan(grassDensity.mul(0.5)), float(1), float(0));
+			const heightScale = float(0.35).add(blade.w).mul(boundary).mul(visible);
+			const lx = positionGeometry.x.mul(bladeWidth).mul(heightScale.sign());
+			const ly = positionGeometry.y.mul(heightScale).mul(bladeHeight);
+			const cY = cos(rotY), sY = sin(rotY);
+			const rx = lx.mul(cY), rz = lx.mul(sY);
+			const t = uv().y, bendFactor = pow(t, 1.8);
+			const staticBendX = hash(instanceIndex.add(7777)).sub(0.5).mul(bladeLean);
+			const staticBendZ = hash(instanceIndex.add(8888)).sub(0.5).mul(bladeLean);
+			const bendX = staticBendX.add(bend.x).add(bend.z);
+			const bendZ = staticBendZ.add(bend.y).add(bend.w);
+			const relX = rx.add(bendX.mul(bendFactor).mul(bladeHeight));
+			const relY = ly;
+			const relZ = rz.add(bendZ.mul(bendFactor).mul(bladeHeight));
+			const origLen = sqrt(rx.mul(rx).add(ly.mul(ly)).add(rz.mul(rz)));
+			const newLen  = sqrt(relX.mul(relX).add(relY.mul(relY)).add(relZ.mul(relZ)));
+			const scale   = origLen.div(newLen.max(0.0001));
+			return vec3(worldX.add(relX.mul(scale)), relY.mul(scale), worldZ.add(relZ.mul(scale)));
+		})();
+
+		grassMat.colorNode = Fn(() => {
+			const t = uv().y;
+			const clump = bladeData.element(instanceIndex).w.saturate();
+			const gradient = pow(t, bladeGradientFalloff);
+			const tipMix = float(1).sub(bladeColorVariation).add(clump.mul(bladeColorVariation));
+			const variedTip = mix(bladeBaseColor, bladeTipColor, tipMix);
+			return mix(bladeBaseColor, variedTip, gradient);
+		})();
+
+		grassMat.opacityNode = smoothstep(float(0.0), float(0.1), uv().y);
+		grassMat.transparent = true;
+
+		const bladeGeo = createBladeGeometry();
+		const grass = new THREE.InstancedMesh(bladeGeo, grassMat, BLADE_COUNT);
+		grass.name = 'grassField';
+		grass.frustumCulled = false;
+		scene.add(grass);
+
+		const dummy = new THREE.Object3D();
+		for (let i = 0; i < BLADE_COUNT; i++) grass.setMatrixAt(i, dummy.matrix);
+		grass.instanceMatrix.needsUpdate = true;
+
+		// ─── Icosahedron ──────────────────────────────────────────────────────────────
+		const icoGeo = new THREE.IcosahedronGeometry(0.45, 1);
+		icoGeo.computeVertexNormals();
+		const icoMat = new THREE.MeshStandardNodeMaterial({ color: new THREE.Color('#ffffff'), roughness: 0.95, metalness: 0.05, flatShading: true });
+		const icosahedron = new THREE.Mesh(icoGeo, icoMat);
+		icosahedron.name = 'icosahedron';
+		icosahedron.position.set(0, 0.45, 0);
+		icosahedron.castShadow = true;
+		icosahedron.receiveShadow = true;
+		scene.add(icosahedron);
+
+		const icoVel = new THREE.Vector3();
+		const icoSpd = 56.0, icoDamp = 0.92, grav = -25.0, jmpF = 10.0, gndY = 0.45;
+		let icoYVel = 0, isGrounded = true;
+		const keysPressed = {};
+
+		window.addEventListener('keydown', (e) => {
+			keysPressed[e.key.toLowerCase()] = true;
+			if (e.code === 'Space') { e.preventDefault(); if (isGrounded) { icoYVel = jmpF; isGrounded = false; } }
+		});
+		window.addEventListener('keyup', (e) => { keysPressed[e.key.toLowerCase()] = false; });
+
+		const camOff = new THREE.Vector3(0, 6, 14.5);
+		const camLerp = 3.0;
+		const camTP = new THREE.Vector3(), camTL = new THREE.Vector3();
+
+		function updateIcosahedron(dt) {
+			const a = new THREE.Vector3();
+			if (keysPressed['w']) a.z -= 1;
+			if (keysPressed['s']) a.z += 1;
+			if (keysPressed['a']) a.x -= 1;
+			if (keysPressed['d']) a.x += 1;
+			if (a.length() > 0) { a.normalize().multiplyScalar(icoSpd * dt); icoVel.add(a); }
+			icoVel.multiplyScalar(icoDamp);
+			icosahedron.position.x += icoVel.x * dt;
+			icosahedron.position.z += icoVel.z * dt;
+			icoYVel += grav * dt;
+			icosahedron.position.y += icoYVel * dt;
+			if (icosahedron.position.y <= gndY) { icosahedron.position.y = gndY; icoYVel = 0; isGrounded = true; }
+			const hf = FIELD_SIZE * 0.5;
+			icosahedron.position.x = Math.max(-hf, Math.min(hf, icosahedron.position.x));
+			icosahedron.position.z = Math.max(-hf, Math.min(hf, icosahedron.position.z));
+			if (icoVel.length() > 0.01) {
+				const ax = new THREE.Vector3(icoVel.z, 0, -icoVel.x).normalize();
+				icosahedron.rotateOnWorldAxis(ax, icoVel.length() * dt * 5);
+			}
+			const hAbove = icosahedron.position.y - gndY;
+			const airF = Math.max(0, 1 - hAbove * 1.5);
+			icoWorld.value.set(icosahedron.position.x * airF + 99999 * (1 - airF), 0, icosahedron.position.z * airF + 99999 * (1 - airF));
+			camTP.set(icosahedron.position.x + camOff.x, camOff.y, icosahedron.position.z + camOff.z);
+			camTL.set(icosahedron.position.x, icosahedron.position.y - 0.75, icosahedron.position.z);
+			const lf = 1 - Math.exp(-camLerp * dt);
+			camera.position.lerp(camTP, lf);
+			controls.target.lerp(camTL, lf);
+		}
+
+		// ─── Ground ───────────────────────────────────────────────────────────────────
+		const groundMat = new THREE.MeshBasicNodeMaterial();
+		groundMat.colorNode = Fn(() => {
+			const wx = positionWorld.x, wz = positionWorld.z;
+			const dist = sqrt(wx.mul(wx).add(wz.mul(wz)));
+			const eN = noise2D(wx.mul(0.25).add(100), wz.mul(0.25).add(100));
+			const maxR = groundRadius.add(eN.sub(0.5).mul(4.0));
+			const t = smoothstep(maxR.sub(groundFalloff), maxR, dist);
+			return mix(groundColor, backgroundColor, t);
+		})();
+		const ground = new THREE.Mesh(new THREE.PlaneGeometry(FIELD_SIZE * 5, FIELD_SIZE * 5), groundMat);
+		ground.name = 'groundPlane';
+		ground.rotation.x = -Math.PI / 2;
+		ground.receiveShadow = true;
+		scene.add(ground);
+
+		// ─── Lights ───────────────────────────────────────────────────────────────────
+		const amb = new THREE.AmbientLight(0xffffff, 0.6);
+		amb.name = 'ambientLight';
+		scene.add(amb);
+		const dir = new THREE.DirectionalLight(0xfff4e0, 1.5);
+		dir.name = 'directionalLight';
+		dir.position.set(5, 10, 7);
+		dir.castShadow = true;
+		dir.shadow.mapSize.width = 1024;
+		dir.shadow.mapSize.height = 1024;
+		dir.shadow.camera.near = 0.5;
+		dir.shadow.camera.far = 30;
+		dir.shadow.camera.left = -12;
+		dir.shadow.camera.right = 12;
+		dir.shadow.camera.top = 12;
+		dir.shadow.camera.bottom = -12;
+		scene.add(dir);
+
+		// ─── Mouse Raycast ────────────────────────────────────────────────────────────
+		const raycaster = new THREE.Raycaster();
+		const mouseNDC  = new THREE.Vector2();
+		const grassPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+		const hitPoint   = new THREE.Vector3();
+
+		window.addEventListener('mousemove', (e) => {
+			mouseNDC.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+			raycaster.setFromCamera(mouseNDC, camera);
+			if (raycaster.ray.intersectPlane(grassPlane, hitPoint)) mouseWorld.value.copy(hitPoint);
+		});
+		window.addEventListener('mouseleave', () => mouseWorld.value.set(99999, 0, 99999));
+
+		window.addEventListener('resize', () => {
+			camera.aspect = innerWidth / innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+			renderer.setSize(innerWidth, innerHeight);
+		});
+
+		// ─── Boot ─────────────────────────────────────────────────────────────────────
+		await renderer.computeAsync(computeInit);
+		const clock = new THREE.Clock();
+
+		function animate() {
+			const dt = Math.min(clock.getDelta(), 0.05);
+			updateIcosahedron(dt);
+			renderer.compute(computeUpdate);
+			controls.update();
+			renderer.render(scene, camera);
+		}
+		renderer.setAnimationLoop(animate);
+	</script>
+</body>
+</html>
