@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { Leaf, Camera, History, ArrowRight, Shield, Zap, Globe, User } from "lucide-react";
+import { Star, ArrowRight, Camera, Shield, Zap, Globe, User, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
-import { HeroGrass } from "@/components/HeroGrass";
+import GlassSurface from "@/components/GlassSurface";
+import BorderGlow from "@/components/BorderGlow";
 
 const features = [
   {
@@ -50,58 +51,71 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative w-full overflow-hidden flex flex-col items-center justify-center" style={{ height: "clamp(400px, 70vh, 85vh)" }}>
-        <HeroGrass />
+      <section 
+        className="relative w-full min-h-[100dvh] flex flex-col items-center pt-28 md:pt-32 pb-12 px-4 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/images/hero-bg.png')" }}
+      >
         
-        {/* Content Overlay */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center pointer-events-none">
-          <div className="mb-6 opacity-0 animate-[fadeUp_1s_ease_0.2s_forwards]">
-            <svg viewBox="0 0 48 48" fill="none" className="w-12 h-12 mx-auto">
-              <path d="M24 4L8 12v10c0 10.5 6.8 20.3 16 22.5 9.2-2.2 16-12 16-22.5V12L24 4z" fill="#3d6b1b" fillOpacity="0.12" stroke="#3d6b1b" strokeWidth="2"/>
-              <path d="M18 24l4 4 8-8" stroke="#3d6b1b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-widest text-[#2d5a10] mb-6 opacity-0 animate-[fadeUp_1s_ease_0.4s_forwards]">
-            FARM SHIELD
-          </h1>
-          <div className="w-12 h-1 bg-[#5a7a2e]/30 rounded-full mb-6 mx-auto opacity-0 animate-[fadeUp_1s_ease_0.6s_forwards]"></div>
-          <p className="text-[#2d3c1e]/80 text-lg md:text-xl font-medium max-w-2xl mb-10 leading-relaxed opacity-0 animate-[fadeUp_1s_ease_0.8s_forwards]">
-            AI-powered agricultural intelligence for Indian farmers — protecting crops, predicting risks, and cultivating smarter harvests.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full sm:w-auto pointer-events-auto opacity-0 animate-[fadeUp_1s_ease_1s_forwards]">
-            <Button size="lg" className="w-full sm:w-auto bg-[#3d6b1b] hover:bg-[#2d5a10] text-white rounded-full px-8 py-6 shadow-lg shadow-[#3d6b1b]/20" asChild>
-              <Link to={user ? "/diagnosis" : "/auth?tab=signup"}>
-                {user ? "Start Diagnosis" : "Get Started"}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            {user && (
-              <Button size="lg" className="w-full sm:w-auto bg-white/40 hover:bg-white/60 text-[#2d5a10] backdrop-blur-md border border-white/40 rounded-full px-8 py-6 transition-all" asChild>
-                <Link to="/history">
-                  <History className="mr-2 h-4 w-4" />
-                  View History
-                </Link>
-              </Button>
-            )}
-            <Button size="lg" className="w-full sm:w-auto bg-white/40 hover:bg-white/60 text-[#2d5a10] backdrop-blur-md border border-white/40 rounded-full px-8 py-6 transition-all" asChild>
-              <Link to="/krishi-setu">
-                <User className="mr-2 h-4 w-4" />
-                Krishi Setu
-              </Link>
-            </Button>
-          </div>
+      {/* Content Container */}
+        <div className="relative z-10 flex flex-col items-center justify-center flex-1 max-w-5xl mx-auto text-center mt-4 md:mt-12 px-2">
+          
+          {/* Headline Glass Surface */}
+          <BorderGlow 
+            backgroundColor="transparent" 
+            borderRadius={32} 
+            animated={false} 
+            glowRadius={12}
+            glowIntensity={0.8}
+            fillOpacity={0.08}
+            edgeSensitivity={60}
+            className="w-full max-w-4xl mb-6 shadow-2xl"
+          >
+            <GlassSurface 
+              width="100%" 
+              height="auto" 
+              className="p-6 md:p-10" 
+              borderRadius={32}
+              opacity={0.7}
+              backgroundOpacity={0.15}
+              distortionScale={0}
+              blur={20}
+            >
+              <h1 className="text-4xl sm:text-6xl md:text-[6rem] leading-[1.05] font-['Oswald'] uppercase tracking-widest font-light opacity-0 animate-[fadeUp_1s_ease_0.4s_forwards] text-center w-full">
+                <span className="text-black">Smart farming begins with</span><br />
+                <span className="text-gray-600">Smart decisions</span>
+              </h1>
+            </GlassSurface>
+          </BorderGlow>
+          
+          {/* Subtext Glass Surface */}
+          <BorderGlow 
+            backgroundColor="transparent" 
+            borderRadius={24} 
+            animated={false} 
+            glowRadius={10}
+            glowIntensity={0.8}
+            fillOpacity={0.08}
+            edgeSensitivity={60}
+            className="w-full max-w-3xl shadow-xl"
+          >
+            <GlassSurface 
+              width="100%" 
+              height="auto" 
+              className="p-5 md:p-8" 
+              borderRadius={24}
+              opacity={0.6}
+              backgroundOpacity={0.15}
+              distortionScale={0}
+              blur={15}
+            >
+              <p className="text-lg md:text-xl text-black font-medium leading-relaxed opacity-0 animate-[fadeUp_1s_ease_0.6s_forwards] text-center w-full">
+                Farmers empowered with AI analysis in disease detection, price forecasting, kisan times and weather prediction
+              </p>
+            </GlassSurface>
+          </BorderGlow>
+          
         </div>
 
-        {/* Keyboard Hint */}
-        <div className="absolute bottom-6 right-6 z-10 hidden sm:flex items-center gap-2 text-xs font-medium text-[#2d3c1e]/40 tracking-wider pointer-events-none opacity-0 animate-[fadeUp_1s_ease_1.8s_forwards]">
-          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">W</span>
-          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">A</span>
-          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">S</span>
-          <span className="flex items-center justify-center w-6 h-6 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">D</span>
-          <span className="ml-1">to move</span>
-          <span className="flex items-center justify-center w-12 h-6 ml-1 bg-white/45 border border-[#5a7a2e]/20 rounded font-semibold text-[#2d3c1e]/60">Space</span>
-          <span className="ml-1">jump</span>
-        </div>
       </section>
 
       {/* Features Section */}

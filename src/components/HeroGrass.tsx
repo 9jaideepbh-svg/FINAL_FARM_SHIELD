@@ -17,7 +17,8 @@ export function HeroGrass() {
     let isCancelled = false;
     let renderer: THREE.WebGPURenderer | null = null;
     
-    const BLADE_COUNT = 80000;
+    const isMobile = window.innerWidth < 768;
+    const BLADE_COUNT = isMobile ? 25000 : 80000;
     const FIELD_SIZE = 20;
     const BACKGROUND_HEX = "#c8c4a0";
     const GROUND_HEX = "#5a5534";
@@ -25,15 +26,15 @@ export function HeroGrass() {
     const BLADE_TIP_HEX = "#8ec438";
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(BACKGROUND_HEX);
+    scene.background = null;
 
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
     camera.position.set(0, 6, 14.5);
 
-    renderer = new THREE.WebGPURenderer({ antialias: true, forceWebGL: false });
+    renderer = new THREE.WebGPURenderer({ antialias: true, forceWebGL: false, alpha: true });
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
     
     mountRef.current.appendChild(renderer.domElement);
     
@@ -294,7 +295,7 @@ export function HeroGrass() {
     ground.name = "groundPlane";
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
-    scene.add(ground);
+    // scene.add(ground);
 
     // ─── Lights ───────────────────────────────────────────────────────────────────
     const amb = new THREE.AmbientLight(0xffffff, 0.6);
@@ -302,8 +303,8 @@ export function HeroGrass() {
     const dir = new THREE.DirectionalLight(0xfff4e0, 1.5);
     dir.position.set(5, 10, 7);
     dir.castShadow = true;
-    dir.shadow.mapSize.width = 1024;
-    dir.shadow.mapSize.height = 1024;
+    dir.shadow.mapSize.width = isMobile ? 512 : 1024;
+    dir.shadow.mapSize.height = isMobile ? 512 : 1024;
     dir.shadow.camera.near = 0.5;
     dir.shadow.camera.far = 30;
     dir.shadow.camera.left = -12;
