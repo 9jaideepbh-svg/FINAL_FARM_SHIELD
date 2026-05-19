@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FARMSHIELD Login</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      width:100%;
+      height:100vh;
+      overflow:hidden;
+      background:#000;
+      font-family:'Inter',sans-serif;
+      color:white;
+      position:relative;
+    }
+
+    /* BACKGROUND */
+
+    .background{
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+
+      background:
+      radial-gradient(circle at center,
+      #06101f 0%,
+      #01040a 42%,
+      #000000 100%);
+    }
+
+    /* GLOWING CURVE */
+
+    .light-ring{
+
+      position:absolute;
+
+      width:1350px;
+      height:1350px;
+
+      border-radius:50%;
+
+      top:50%;
+      left:44%;
+
+      transform:translate(-50%, -50%);
+
+      pointer-events:none;
+
+      transition:
+      transform 0.08s linear;
+
+      background:
+      radial-gradient(circle,
+
+      rgba(0,0,0,0) 56%,
+
+      rgba(199,231,255,0.04) 60%,
+
+      rgba(207,235,255,0.22) 63%,
+
+      rgba(255,255,255,0.96) 66%,
+
+      rgba(193,226,255,0.82) 68%,
+
+      rgba(123,187,255,0.35) 70%,
+
+      rgba(0,0,0,0) 74%);
+
+      filter:
+      blur(16px)
+      drop-shadow(0 0 90px rgba(173,220,255,0.9))
+      drop-shadow(0 0 160px rgba(95,170,255,0.55));
+
+      opacity:0.95;
+
+    }
+
+    /* OVERLAY */
+
+    .overlay{
+      position:absolute;
+      inset:0;
+
+      background:
+      linear-gradient(
+      90deg,
+      rgba(0,0,0,0.08),
+      rgba(0,0,0,0),
+      rgba(0,0,0,0.28));
+
+      pointer-events:none;
+    }
+
+    /* NOISE */
+
+    .noise{
+      position:absolute;
+      inset:0;
+
+      opacity:0.04;
+
+      mix-blend-mode:soft-light;
+
+      background-image:
+      url("https://grainy-gradients.vercel.app/noise.svg");
+    }
+
+    /* SIDE TEXT */
+
+    .side-text{
+
+      position:absolute;
+
+      right:18px;
+      top:50%;
+
+      transform:
+      translateY(-50%)
+      rotate(90deg);
+
+      color:#5f6679;
+
+      font-size:11px;
+
+      letter-spacing:6px;
+
+      z-index:5;
+
+    }
+
+    /* AUTH PANEL */
+
+    .auth-panel{
+
+      position:absolute;
+
+      right:90px;
+      top:50%;
+
+      transform:translateY(-50%);
+
+      width:470px;
+
+      background:
+      linear-gradient(
+      180deg,
+      rgba(10,13,22,0.72),
+      rgba(5,7,13,0.84)
+      );
+
+      border:
+      1px solid rgba(255,255,255,0.07);
+
+      border-radius:42px;
+
+      backdrop-filter:blur(28px);
+
+      box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.02),
+      0 0 80px rgba(106,170,255,0.08);
+
+      padding:48px;
+
+      z-index:10;
+
+    }
+
+    /* TOP LINES */
+
+    .steps{
+      display:flex;
+      gap:14px;
+      margin-bottom:52px;
+    }
+
+    .steps div{
+      flex:1;
+      height:3px;
+      border-radius:999px;
+      background:#161b26;
+    }
+
+    .steps div:first-child{
+      background:white;
+      box-shadow:0 0 10px white;
+    }
+
+    /* TITLE */
+
+    h1{
+
+      font-size:48px;
+
+      line-height:1.05;
+
+      letter-spacing:-2px;
+
+      margin-bottom:16px;
+
+      font-weight:800;
+
+    }
+
+    .subtitle{
+
+      color:#8d95a8;
+
+      font-size:16px;
+
+      line-height:1.6;
+
+      margin-bottom:36px;
+
+    }
+
+    /* GOOGLE BUTTON */
+
+    .google-btn{
+
+      width:100%;
+      height:72px;
+
+      border-radius:999px;
+
+      border:
+      1px solid rgba(255,255,255,0.06);
+
+      background:
+      linear-gradient(
+      90deg,
+      rgba(255,255,255,0.05),
+      rgba(255,255,255,0.025)
+      );
+
+      color:white;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+
+      font-size:17px;
+      font-weight:500;
+
+      position:relative;
+
+      cursor:pointer;
+
+      transition:0.3s;
+
+      margin-bottom:30px;
+
+    }
+
+    .google-btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 0 24px rgba(255,255,255,0.08);
+    }
+
+    .google-icon{
+      font-size:24px;
+    }
+
+    .last-used{
+
+      position:absolute;
+
+      top:-11px;
+      right:20px;
+
+      padding:4px 10px;
+
+      border-radius:999px;
+
+      background:
+      rgba(255,255,255,0.05);
+
+      border:
+      1px solid rgba(255,255,255,0.06);
+
+      font-size:11px;
+
+      color:#d3dbeb;
+
+    }
+
+    /* DIVIDER */
+
+    .divider{
+
+      display:flex;
+      align-items:center;
+      gap:18px;
+
+      color:#8e96a8;
+
+      font-size:13px;
+
+      margin-bottom:34px;
+
+    }
+
+    .divider::before,
+    .divider::after{
+      content:"";
+      flex:1;
+      height:1px;
+      background:#242938;
+    }
+
+    /* FIELD */
+
+    .field{
+      margin-bottom:36px;
+    }
+
+    .field label{
+
+      display:block;
+
+      margin-bottom:12px;
+
+      font-size:14px;
+      font-weight:600;
+
+      color:#dfe7f6;
+
+    }
+
+    .input{
+
+      width:100%;
+      height:72px;
+
+      border-radius:20px;
+
+      background:
+      rgba(255,255,255,0.03);
+
+      border:
+      1px solid rgba(255,255,255,0.06);
+
+      outline:none;
+
+      padding:0 24px;
+
+      color:white;
+
+      font-size:16px;
+
+      transition:0.3s;
+
+    }
+
+    .input:focus{
+
+      border:
+      1px solid rgba(153,201,255,0.45);
+
+      box-shadow:
+      0 0 24px rgba(121,181,255,0.12);
+
+    }
+
+    .input::placeholder{
+      color:#71798c;
+    }
+
+    /* BUTTON */
+
+    .continue-btn{
+
+      width:100%;
+      height:74px;
+
+      border:none;
+
+      border-radius:999px;
+
+      cursor:pointer;
+
+      background:
+      linear-gradient(
+      90deg,
+      #5f4eff,
+      #7d5dff,
+      #684dff
+      );
+
+      color:white;
+
+      font-size:20px;
+      font-weight:700;
+
+      box-shadow:
+      0 10px 30px rgba(107,77,255,0.35);
+
+      transition:0.3s;
+
+    }
+
+    .continue-btn:hover{
+
+      transform:translateY(-2px);
+
+      box-shadow:
+      0 15px 42px rgba(107,77,255,0.5);
+
+    }
+
+    /* SIGNUP */
+
+    .signup{
+
+      margin-top:34px;
+
+      text-align:center;
+
+      color:#8d95a8;
+
+      font-size:15px;
+
+    }
+
+    .signup span{
+      color:#7d8aff;
+      font-weight:600;
+      cursor:pointer;
+    }
+
+    /* FOOTER */
+
+    .footer{
+
+      margin-top:36px;
+
+      padding-top:26px;
+
+      border-top:
+      1px solid rgba(255,255,255,0.05);
+
+      text-align:center;
+
+      line-height:1.9;
+
+      color:#8d95a8;
+
+      font-size:14px;
+
+    }
+
+    .clerk{
+      color:white;
+      font-weight:700;
+    }
+
+    .dev{
+      color:#ff934d;
+      font-weight:700;
+    }
+
+    /* MOBILE */
+
+    @media(max-width:900px){
+
+      body{
+        overflow:auto;
+      }
+
+      .auth-panel{
+
+        position:relative;
+
+        top:auto;
+        right:auto;
+
+        transform:none;
+
+        width:92%;
+
+        margin:auto;
+        margin-top:40px;
+        margin-bottom:40px;
+
+      }
+
+      .light-ring{
+        width:1000px;
+        height:1000px;
+        left:50%;
+      }
+
+      .side-text{
+        display:none;
+      }
+
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="background">
+
+    <!-- MAIN CURVE -->
+    <div class="light-ring" id="ring"></div>
+
+    <div class="overlay"></div>
+
+    <div class="noise"></div>
+
+    <!-- SIDE TEXT -->
+    <div class="side-text">
+      REGISTRY • PROMPT • SR
+    </div>
+
+    <!-- LOGIN PANEL -->
+
+    <div class="auth-panel">
+
+      <div class="steps">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <h1>
+        Sign in to FARMSHIELD
+      </h1>
+
+      <div class="subtitle">
+        Welcome back! Please sign in to continue
+      </div>
+
+      <!-- GOOGLE LOGIN -->
+
+      <button class="google-btn">
+
+        <div class="last-used">
+          Last used
+        </div>
+
+        <span class="google-icon">🌐</span>
+
+        Continue with Google
+
+      </button>
+
+      <!-- DIVIDER -->
+
+      <div class="divider">
+        or
+      </div>
+
+      <!-- EMAIL -->
+
+      <div class="field">
+
+        <label>Email address</label>
+
+        <input
+        type="email"
+        class="input"
+        placeholder="Enter your email address">
+
+      </div>
+
+      <!-- BUTTON -->
+
+      <button class="continue-btn">
+        Continue →
+      </button>
+
+      <!-- SIGNUP -->
+
+      <div class="signup">
+        Don't have an account?
+        <span>Sign up</span>
+      </div>
+
+      <!-- FOOTER -->
+
+      <div class="footer">
+
+        Secured by
+        <span class="clerk">Clerk</span>
+
+        <br>
+
+        <span class="dev">
+          Development mode
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- CURSOR EFFECT -->
+
+  <script>
+
+    const ring = document.getElementById("ring");
+
+    document.addEventListener("mousemove",(e)=>{
+
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+
+      const moveX = (x - 0.5) * 140;
+      const moveY = (y - 0.5) * 90;
+
+      ring.style.transform =
+      `translate(-50%, -50%) translate(${moveX}px, ${moveY}px)`;
+
+    });
+
+  </script>
+
+</body>
+</html>

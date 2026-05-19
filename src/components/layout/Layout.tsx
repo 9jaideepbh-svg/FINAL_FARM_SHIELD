@@ -8,16 +8,17 @@ import { useLocation } from "react-router-dom";
 interface LayoutProps {
   children: ReactNode;
   showFooter?: boolean;
+  showHeader?: boolean;
 }
 
-export function Layout({ children, showFooter = true }: LayoutProps) {
+export function Layout({ children, showFooter = true, showHeader = true }: LayoutProps) {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className={`flex-1 ${isHomePage ? "" : "pt-32"}`}>
+      {showHeader && <Header />}
+      <main className={`flex-1 ${isHomePage || !showHeader ? "" : "pt-32"}`}>
         {children}
       </main>
       {showFooter && <Footer />}

@@ -1,74 +1,131 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Microscope, CloudUpload, Leaf, CheckCircle2, Sparkles, Download } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { ImageUpload } from "@/components/diagnosis/ImageUpload";
-import { SimplifiedResult } from "@/components/diagnosis/SimplifiedResult";
+import { DiagnosisResultCards } from "@/components/diagnosis/DiagnosisResultCards";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
+import { useUser } from "@clerk/clerk-react";
 import { useToast } from "@/hooks/use-toast";
-import { uploadPlantImage } from "@/lib/supabase-storage";
+import { uploadToCloudinary, fileToBase64 } from "@/lib/cloudinary";
+import { saveDiagnosisToFirestore, type DiagnosisHistoryRecord } from "@/lib/diagnosisHistory";
 import { supabase } from "@/integrations/supabase/client";
+import type { SanitizedDiagnosis } from "@/lib/groqDiagnosis";
+import { generateDiagnosisPDF } from "@/lib/generateDiagnosisPDF";
+import { cn } from "@/lib/utils";
 
-interface ActionPlan {
-  immediate_actions: string[];
-  short_term: string[];
-  long_term: string[];
+// ─── Pipeline step definition ─────────────────────────────────────────────────
+interface PipelineStep {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ElementType;
 }
 
-interface Improvements {
-  soil_management: string[];
-  water_management: string[];
-  nutrient_management: string[];
-  pest_prevention: string[];
-}
+const PIPELINE_STEPS: PipelineStep[] = [
+  {
+    id: "upload",
+    label: "Uploading Image",
+    description: "Storing your plant image securely on Cloudinary...",
+    icon: CloudUpload,
+  },
+  {
+    id: "enhance",
+    label: "Enhancing with AI",
+    description: "Applying smart sharpening & contrast correction via Cloudinary...",
+    icon: Sparkles,
+  },
+  {
+    id: "ai",
+    label: "Running AI Diagnosis",
+    description: "PlantNet + Plant.id running in parallel · Groq sanitizing...",
+    icon: Microscope,
+  },
+  {
+    id: "saving",
+    label: "Saving to History",
+    description: "Storing your diagnosis record in Firestore...",
+    icon: Leaf,
+  },
+];
 
-interface DiagnosisResultData {
-  diagnosis_id?: string;
-  crop_name: string;
-  disease_name: string;
-  confidence_percentage: number;
-  is_healthy: boolean;
-  severity?: string | null;
-  diagnosis_details?: {
-    symptoms_observed?: string[];
-    affected_parts?: string[];
-    disease_stage?: string;
-    pathogen_type?: string;
-    action_plan?: ActionPlan;
-    improvements?: Improvements;
-  };
-  action_plan?: ActionPlan;
-  improvements?: Improvements;
-  prevention_tips?: string[];
-  diagnosis_date: string;
-  low_confidence_warning?: boolean;
-}
-
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function Diagnosis() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoaded: authLoaded } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<DiagnosisResultData | null>(null);
+  const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [result, setResult] = useState<SanitizedDiagnosis | null>(null);
+  const [cloudinaryImageUrl, setCloudinaryImageUrl] = useState<string | null>(null);
+  const [enhancedImageUrl, setEnhancedImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Pre-computed base64 — populated immediately when the user selects a file,
+   * so it is ready before Analyze is clicked (no blocking wait during the pipeline).
+   */
+  const precomputedBase64Ref = useRef<Promise<string> | null>(null);
+
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoaded && !user) {
       navigate("/auth");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoaded, navigate]);
+
+  const handleDownloadPDF = async () => {
+    if (!result || !user) return;
+    setPdfGenerating(true);
+    try {
+      // Map active result & image into the DiagnosisHistoryRecord shape
+      const record: Partial<DiagnosisHistoryRecord> = {
+        id: "active-session",
+        userId: user.id,
+        imageUrl: enhancedImageUrl ?? cloudinaryImageUrl ?? previewUrl ?? "",
+        plantName: result.plantName,
+        groqResponse: result,
+      };
+
+      await generateDiagnosisPDF(record as DiagnosisHistoryRecord);
+
+      toast({
+        title: "✅ PDF Report Saved!",
+        description: `FarmShield_Diagnosis_${result.plantName}.pdf has been generated successfully.`,
+      });
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast({
+        title: "PDF Error",
+        description: "Could not generate PDF report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  const markStep = (stepId: string) => setCurrentStep(stepId);
+  const completeStep = (stepId: string) =>
+    setCompletedSteps((prev) => [...prev, stepId]);
 
   const handleImageSelect = (file: File) => {
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setResult(null);
     setError(null);
+    setCompletedSteps([]);
+    setCurrentStep(null);
+    // ⚡ Start base64 conversion immediately in background — ready before user clicks Analyze
+    precomputedBase64Ref.current = fileToBase64(file);
   };
 
   const handleClear = () => {
@@ -76,66 +133,11 @@ export default function Diagnosis() {
     setPreviewUrl(null);
     setResult(null);
     setError(null);
-  };
-
-  const handleAnalyze = async () => {
-    if (!selectedFile || !user) return;
-
-    setIsAnalyzing(true);
-    setError(null);
-
-    try {
-      // Upload image to storage
-      const { url: imageUrl } = await uploadPlantImage(selectedFile, user.id);
-
-      // Convert image to base64 for AI analysis
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64 = result.split(",")[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(selectedFile);
-      const imageBase64 = await base64Promise;
-
-      // Call the diagnosis edge function
-      const { data, error: fnError } = await supabase.functions.invoke("diagnose-plant", {
-        body: {
-          imageBase64,
-          imageUrl,
-          userId: user.id,
-        },
-      });
-
-      if (fnError) {
-        throw new Error(fnError.message || "Failed to analyze image");
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setResult(data);
-      
-      toast({
-        title: "Analysis Complete",
-        description: `Detected: ${data.disease_name} in ${data.crop_name}`,
-      });
-    } catch (err) {
-      console.error("Diagnosis error:", err);
-      const message = err instanceof Error ? err.message : "Failed to analyze image";
-      setError(message);
-      toast({
-        title: "Analysis Failed",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
+    setCompletedSteps([]);
+    setCurrentStep(null);
+    setCloudinaryImageUrl(null);
+    setEnhancedImageUrl(null);
+    precomputedBase64Ref.current = null;
   };
 
   const handleNewDiagnosis = () => {
@@ -143,9 +145,100 @@ export default function Diagnosis() {
     setPreviewUrl(null);
     setResult(null);
     setError(null);
+    setCompletedSteps([]);
+    setCurrentStep(null);
+    setCloudinaryImageUrl(null);
+    setEnhancedImageUrl(null);
+    precomputedBase64Ref.current = null;
   };
 
-  if (authLoading) {
+  const handleAnalyze = async () => {
+    if (!selectedFile || !user) return;
+
+    setIsAnalyzing(true);
+    setError(null);
+    setCompletedSteps([]);
+
+    try {
+      // ── Step 1 + Parallel: Upload to Cloudinary & await pre-computed base64 simultaneously ──
+      // base64 was already started in handleImageSelect (instant if user took >0.5s to click)
+      markStep("upload");
+      const [cloudinaryResult, imageBase64] = await Promise.all([
+        uploadToCloudinary(selectedFile),
+        precomputedBase64Ref.current ?? fileToBase64(selectedFile), // fallback if ref missing
+      ]);
+
+      const imageUrl = cloudinaryResult.url;            // original — stored in Firestore
+      const enhancedUrl = cloudinaryResult.enhancedUrl; // AI-enhanced URL (instant string transform)
+      setCloudinaryImageUrl(imageUrl);
+      setEnhancedImageUrl(enhancedUrl);
+      setPreviewUrl(enhancedUrl);
+      completeStep("upload");
+
+      // ── Step 2: Enhance (URL already built — just mark the visual step) ────────────
+      markStep("enhance");
+      completeStep("enhance");
+
+      // ── Step 3: Call Supabase Edge Function (PlantNet ∥∥ Plant.id + Groq) ───────
+      // All sensitive API keys live ONLY inside the Edge Function — never in browser
+      markStep("ai");
+      const { data, error: fnError } = await supabase.functions.invoke("plant-diagnosis", {
+        body: { imageBase64 },
+      });
+
+      console.log("[Diagnosis] Edge function returned data:", data);
+
+      if (fnError) {
+        // Try to extract the real error message from the edge function's response body
+        // The Supabase SDK wraps the actual body in fnError.context or fnError.message
+        const context = (fnError as unknown as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+        let detail = fnError.message || "Edge Function failed.";
+        if (context?.json) {
+          try {
+            const body = await context.json();
+            if (body?.error) detail = body.error;
+          } catch {
+            // fallback to fnError.message
+          }
+        }
+        throw new Error(detail);
+      }
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const sanitized = data as SanitizedDiagnosis;
+      console.log("[Diagnosis] Sanitized result being set to state:", sanitized);
+      completeStep("ai");
+
+      // ── Step 4: Save to Firestore ─────────────────────────────────────────
+      markStep("saving");
+      await saveDiagnosisToFirestore(user.id, imageUrl, sanitized);
+      completeStep("saving");
+
+      setResult(sanitized);
+
+      toast({
+        title: "Diagnosis Complete ✅",
+        description: sanitized.groqSummary,
+      });
+    } catch (err) {
+      console.error("Diagnosis pipeline error:", err);
+      const message =
+        err instanceof Error ? err.message : "An unexpected error occurred.";
+      setError(message);
+      toast({
+        title: "Diagnosis Failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+      setCurrentStep(null);
+    }
+  };
+
+  if (!authLoaded) {
     return (
       <Layout>
         <div className="container py-20 flex items-center justify-center">
@@ -157,76 +250,178 @@ export default function Diagnosis() {
 
   return (
     <Layout>
-      <div className="container py-8 md:py-12 max-w-3xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Plant Disease Diagnosis</h1>
-          <p className="text-muted-foreground">
-            Upload a clear photo of your plant to get an AI-powered disease diagnosis
+      <div className="container py-8 md:py-12 max-w-4xl">
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4">
+            <Microscope className="h-4 w-4" />
+            AI-Powered Plant Diagnosis
+          </div>
+          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-green-400 to-emerald-600 bg-clip-text text-transparent">
+            Plant Disease Diagnosis
+          </h1>
+          <p className="text-muted-foreground max-w-lg mx-auto">
+            Upload a clear photo of your plant. Our AI pipeline — PlantNet + Plant.id + Groq — runs securely server-side and delivers a premium diagnosis report.
           </p>
         </div>
 
+        {/* ── Main Content ────────────────────────────────────────────────── */}
         {!result ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Plant Image</CardTitle>
-              <CardDescription>
-                Take or upload a clear photo of the affected plant part (leaf, stem, fruit)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <ImageUpload
-                onImageSelect={handleImageSelect}
-                isUploading={isAnalyzing}
-                previewUrl={previewUrl}
-                onClear={handleClear}
-              />
+          <div className="space-y-6">
+            <Card className="border-2 border-primary/20 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CloudUpload className="h-5 w-5 text-primary" />
+                  Upload Plant Image
+                </CardTitle>
+                <CardDescription>
+                  Drag & drop or choose a photo — JPG, PNG, WebP up to 10 MB
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <ImageUpload
+                  onImageSelect={handleImageSelect}
+                  isUploading={isAnalyzing}
+                  previewUrl={previewUrl}
+                  onClear={handleClear}
+                />
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+                {/* Error */}
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-              {selectedFile && !isAnalyzing && (
-                <div className="flex justify-center">
-                  <Button size="lg" onClick={handleAnalyze}>
-                    Analyze Plant
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {/* Pipeline Progress */}
+                {isAnalyzing && (
+                  <div className="space-y-3 p-5 rounded-xl bg-muted/40 border border-primary/10">
+                    <p className="text-sm font-semibold text-center text-primary mb-4">
+                      Running AI Diagnosis Pipeline…
+                    </p>
+                    {PIPELINE_STEPS.map((step) => {
+                      const isDone = completedSteps.includes(step.id);
+                      const isActive = currentStep === step.id;
+                      const Icon = step.icon;
+                      return (
+                        <div
+                          key={step.id}
+                          className={cn(
+                            "flex items-center gap-4 p-3 rounded-lg transition-all duration-300",
+                            isDone && "bg-green-500/10 border border-green-500/20",
+                            isActive && "bg-primary/10 border border-primary/30 shadow-sm",
+                            !isDone && !isActive && "opacity-40"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-9 w-9 items-center justify-center rounded-full shrink-0",
+                              isDone && "bg-green-500 text-white",
+                              isActive && "bg-primary text-white",
+                              !isDone && !isActive && "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {isDone ? (
+                              <CheckCircle2 className="h-5 w-5" />
+                            ) : isActive ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Icon className="h-5 w-5" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={cn(
+                                "text-sm font-semibold",
+                                isDone && "text-green-600",
+                                isActive && "text-primary"
+                              )}
+                            >
+                              {step.label}
+                            </p>
+                            {isActive && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {step.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Analyse Button */}
+                {selectedFile && !isAnalyzing && (
+                  <div className="flex justify-center">
+                    <Button
+                      size="lg"
+                      onClick={handleAnalyze}
+                      className="gap-2 px-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/20"
+                    >
+                      <Microscope className="h-5 w-5" />
+                      Analyse Plant
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           <div className="space-y-6">
-            {previewUrl && (
-              <Card className="overflow-hidden">
+            {/* Enhanced Cloudinary image preview */}
+            {(enhancedImageUrl || cloudinaryImageUrl) && (
+              <Card className="overflow-hidden border-2 border-primary/20 shadow-xl">
                 <img
-                  src={previewUrl}
-                  alt="Analyzed plant"
-                  className="w-full h-48 object-cover"
+                  src={enhancedImageUrl ?? cloudinaryImageUrl!}
+                  alt="AI-enhanced diagnosed plant"
+                  className="w-full h-56 md:h-72 object-cover"
                 />
+                <div className="px-4 py-2 bg-muted/60 text-xs text-muted-foreground flex items-center gap-2 justify-between">
+                  <div className="flex items-center gap-2">
+                    <CloudUpload className="h-3 w-3" />
+                    Stored on Cloudinary · Persisted in your diagnosis history
+                  </div>
+                  <Badge variant="outline" className="text-xs border-green-500/30 text-green-600 gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    AI Enhanced
+                  </Badge>
+                </div>
               </Card>
             )}
-            
-            <SimplifiedResult
-              plantName={result.crop_name}
-              condition={result.disease_name}
-              isHealthy={result.is_healthy}
-              confidencePercentage={result.confidence_percentage}
-              symptomsObserved={result.diagnosis_details?.symptoms_observed}
-              actionPlan={result.action_plan || result.diagnosis_details?.action_plan}
-              improvements={result.improvements || result.diagnosis_details?.improvements}
-              severity={result.severity}
-              diagnosisDate={result.diagnosis_date}
-              lowConfidenceWarning={result.low_confidence_warning}
-              fertilizerRecommendations={(result as any).fertilizer_recommendations}
-              organicAmendments={(result as any).organic_amendments}
-            />
 
-            <div className="flex justify-center">
-              <Button onClick={handleNewDiagnosis} size="lg">
+            {/* Premium 6-Card Result */}
+            <DiagnosisResultCards diagnosis={result} />
+
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-2">
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={pdfGenerating}
+                size="lg"
+                className="w-full sm:w-auto gap-2 px-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/20 backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all duration-300"
+              >
+                {pdfGenerating ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-5 w-5" />
+                    Download PDF Report
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleNewDiagnosis}
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto gap-2 px-8 border-2 border-primary/30 hover:bg-primary/5 hover:scale-[1.02] transition-all duration-300 backdrop-blur-md"
+              >
+                <Leaf className="h-5 w-5" />
                 New Diagnosis
               </Button>
             </div>

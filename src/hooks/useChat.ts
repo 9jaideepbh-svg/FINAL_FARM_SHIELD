@@ -6,7 +6,8 @@ export type ChatMessage = {
   content: string;
 };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+// Groq API direct integration
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -36,39 +37,52 @@ export function useChat() {
     };
 
     try {
-      const response = await fetch(CHAT_URL, {
+      const groqKey = import.meta.env.VITE_GROQ_KEY;
+      if (!groqKey) throw new Error("Groq API key is missing");
+
+      const response = await fetch(GROQ_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${groqKey}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
+        body: JSON.stringify({ 
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "system",
+              content: `You are Krishi Voice, an Indian farming assistant.
+
+LANGUAGE RULE — THIS IS YOUR MOST IMPORTANT RULE:
+1. Look at the user's message carefully
+2. Detect what language it is written in
+3. Reply in THAT EXACT SAME language — no exceptions
+4. NEVER switch languages on your own
+
+Examples:
+- User writes in English → You reply in English ONLY
+- User writes in Kannada (ಕನ್ನಡ) → You reply in Kannada ONLY
+- User writes in Hindi → You reply in Hindi ONLY
+- User writes in Tamil → You reply in Tamil ONLY
+- USER SPEAK IN WHICH LANGUAGE=REPLY IN THAT LANGUAGE ONLY
+If you are unsure of the language → reply in English.
+
+FARMING RULE:
+- Answer farming questions only
+- Keep reply between 50 and 90 words
+- Give one clear actionable tip, and say where can he make more profit
+- Use simple language a rural farmer understands`
+            },
+            ...messages.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
+            { role: "user", content: input.trim() }
+          ],
+          stream: true,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        
-        if (response.status === 429) {
-          toast({
-            title: "Rate Limited",
-            description: "Too many requests. Please wait a moment and try again.",
-            variant: "destructive",
-          });
-        } else if (response.status === 402) {
-          toast({
-            title: "Credits Exhausted",
-            description: "AI credits have been exhausted. Please try again later.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: errorData.error || "Failed to send message",
-            variant: "destructive",
-          });
-        }
-        setIsLoading(false);
-        return;
+        throw new Error(errorData.error?.message || "Failed to send message");
       }
 
       if (!response.body) {

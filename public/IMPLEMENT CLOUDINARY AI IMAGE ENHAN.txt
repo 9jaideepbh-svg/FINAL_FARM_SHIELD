@@ -1,0 +1,166 @@
+IMPLEMENT CLOUDINARY AI IMAGE ENHANCEMENT PIPELINE FOR PLANT DIAGNOSIS
+
+We need to upgrade the current plant diagnosis image pipeline using Cloudinary AI transformations before sending images to PlantNet and Plant.id APIs.
+
+CURRENT FLOW:
+User Upload → Cloudinary → Base64 → PlantNet → Plant.id → Groq → Firestore
+
+NEW REQUIRED FLOW:
+User Upload
+↓
+Upload Original Image to Cloudinary
+↓
+Automatically Generate Enhanced AI Version
+↓
+Use Enhanced Image for Diagnosis
+↓
+Convert Enhanced Image to Base64
+↓
+Send to PlantNet + Plant.id
+↓
+Groq AI Sanitization
+↓
+Store Final Results in Firestore
+
+IMPORTANT:
+Do NOT manually enhance images from Cloudinary dashboard.
+Transformations must happen dynamically in code.
+
+---------------------------------------------------
+CLOUDINARY AI TRANSFORMATIONS REQUIRED
+---------------------------------------------------
+
+Apply these transformations automatically after upload:
+
+q_auto
+f_auto
+e_enhance
+e_sharpen:50
+
+The enhanced image URL should be generated dynamically.
+
+Example:
+
+Original:
+https://res.cloudinary.com/demo/image/upload/sample.jpg
+
+Enhanced:
+https://res.cloudinary.com/demo/image/upload/q_auto,f_auto,e_enhance,e_sharpen:50/sample.jpg
+
+IMPLEMENTATION REQUIREMENT:
+
+After upload response:
+Replace:
+"/upload/"
+
+With:
+"/upload/q_auto,f_auto,e_enhance,e_sharpen:50/"
+
+Example:
+
+const enhancedUrl = uploadedUrl.replace(
+  "/upload/",
+  "/upload/q_auto,f_auto,e_enhance,e_sharpen:50/"
+);
+
+Use ONLY enhancedUrl for:
+- PlantNet API
+- Plant.id API
+- Base64 conversion
+- Preview rendering
+
+Do NOT send original image to diagnosis APIs.
+
+---------------------------------------------------
+ADD IMAGE QUALITY VALIDATION
+---------------------------------------------------
+
+Before sending image to PlantNet or Plant.id:
+
+Validate:
+- image resolution
+- blur level
+- brightness
+- image corruption
+- minimum dimensions
+- leaf visibility
+
+RULES:
+Reject image if:
+-image is irrelavent completely 
+-if image quality is too bad
+
+Show proper UI error messages.
+
+Example:
+"Image quality too low for accurate disease diagnosis. Please upload a clearer leaf image."
+
+---------------------------------------------------
+UI REQUIREMENTS
+---------------------------------------------------
+
+During processing:
+Show pipeline stages visually:
+
+1. Uploading Image
+2. Enhancing with AI
+3. Converting to Base64
+4. Running Plant Identification
+5. Running Disease Analysis
+6. Generating AI Recommendations
+7. Saving Diagnosis History
+
+Each stage should animate progressively.
+
+---------------------------------------------------
+PREVIEW REQUIREMENT
+---------------------------------------------------
+
+After upload:
+Show enhanced image preview instead of original image.
+
+This allows users to see:
+- sharpened leaf texture
+- improved disease spots
+- brighter image quality
+
+---------------------------------------------------
+PERFORMANCE REQUIREMENTS
+---------------------------------------------------
+
+Enhancement should happen server-side.
+
+Do NOT freeze frontend.
+
+Use async processing.
+
+Optimize for:
+- mobile devices
+- low bandwidth
+- fast diagnosis speed
+------------------------------------------------
+IMPORTANT
+---------------------------------------------------
+
+Do NOT over-enhance images.
+Avoid artistic AI filters.
+This is agricultural diagnosis, not photo beautification.
+
+Only use:
+- clarity enhancement
+- sharpening
+- smart optimization
+
+Preserve original disease texture and leaf patterns accurately.
+
+---------------------------------------------------
+FINAL GOAL
+---------------------------------------------------
+
+The enhanced image pipeline should improve:
+- disease detection accuracy
+- low-light image quality
+- blurry farmer uploads
+- overall AI diagnosis reliability
+
+while maintaining scientific integrity of leaf disease patterns.

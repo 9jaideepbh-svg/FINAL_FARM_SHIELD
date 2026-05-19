@@ -1,0 +1,38 @@
+The Supabase Edge Function "plant-diagnosis" is returning 
+a non-2xx status code error when called from the frontend.
+
+Please do these fixes:
+
+1. Add detailed console.log statements at every step 
+   inside the edge function so we can see exactly 
+   where it is failing:
+   - Log when function starts
+   - Log after reading the request body
+   - Log before and after PlantNet API call
+   - Log the PlantNet response status and body
+   - Log before and after Plant.id API call
+   - Log the Plant.id response status and body
+   - Log before and after Groq API call
+   - Log the Groq response
+
+2. Wrap each API call in its own try-catch block 
+   separately so if one fails it tells us exactly 
+   which one failed and why
+
+3. If Groq JSON parsing fails, return the raw 
+   text instead of crashing
+
+4. Make the error response include the actual 
+   error message so the frontend can display 
+   exactly what went wrong instead of just 
+   "non-2xx status code"
+
+5. After making these changes, deploy the edge 
+   function again with: supabase functions deploy 
+   plant-diagnosis
+
+Then check the Supabase Edge Function logs at:
+supabase.com → your project → Edge Functions → 
+plant-diagnosis → Logs
+
+The logs will show exactly which step is failing.

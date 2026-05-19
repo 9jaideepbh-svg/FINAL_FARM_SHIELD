@@ -3,7 +3,7 @@ import { Star, ArrowRight, Camera, Shield, Zap, Globe, User, Leaf } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/layout/Layout";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@clerk/clerk-react";
 import GlassSurface from "@/components/GlassSurface";
 import BorderGlow from "@/components/BorderGlow";
 
@@ -46,7 +46,7 @@ const features = [
 ];
 
 export default function Index() {
-  const { user } = useAuth();
+  const { user } = useUser();
 
   return (
     <Layout>

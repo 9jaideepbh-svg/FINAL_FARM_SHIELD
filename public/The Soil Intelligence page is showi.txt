@@ -1,0 +1,56 @@
+The Soil Intelligence page is showing "Could not fetch 
+satellite data or generate AI report" error when trying 
+to analyze soil for Chikkamagaluru, Karnataka.
+
+The issue is that SoilGrids API and NASA POWER API 
+are either timing out or failing silently.
+
+Fix this with the following changes:
+
+1. SoilGrids API fix:
+The correct working URL for SoilGrids v2 is:
+https://rest.isric.org/soilgrids/v2.0/properties/query?lon={longitude}&lat={latitude}&property=phh2o&property=nitrogen&property=soc&property=clay&property=sand&property=silt&depth=0-5cm&value=mean
+
+For Chikkamagaluru the coordinates are:
+latitude: 13.3161, longitude: 75.7720
+
+Add a timeout of 15 seconds to this API call 
+because SoilGrids can be slow.
+
+If SoilGrids times out or fails, do not stop 
+the whole analysis. Instead use these fallback 
+default values for Karnataka red soil:
+- pH: 6.2
+- nitrogen: low
+- organic carbon: 0.8%
+- clay: 35%
+- sand: 45%
+- soil type: Red Laterite Soil
+
+2. NASA POWER API fix:
+The correct working URL is:
+https://power.larc.nasa.gov/api/temporal/daily/point?parameters=GWETROOT,T2M,PRECTOTCORR&community=AG&longitude={lon}&latitude={lat}&start=20250401&end=20250519&format=JSON
+
+Add a 15 second timeout here too.
+If it fails use Tomorrow.io weather data only 
+as fallback.
+
+3. Most important fix:
+Even if BOTH soil APIs fail completely, 
+the analysis should NOT fail.
+If real soil data cannot be fetched, 
+tell Groq to generate the analysis based on:
+- The district name and state name provided
+- Known soil types for that Karnataka district
+- Historical agricultural data for that region
+Groq has enough knowledge to generate a 
+realistic soil report for any Indian district 
+without satellite data.
+
+4. Add better error messages showing which 
+specific API failed so we can debug easily.
+
+The goal is: analysis should ALWAYS complete 
+and show results even if satellite APIs are slow 
+or unavailable. Groq should be the final 
+safety net that always generates a result.

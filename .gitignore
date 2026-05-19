@@ -30,3 +30,6 @@ dist-ssr
 
 # Scratch / temporary files
 scratch/
+.vite/
+supabase/.temp/
+

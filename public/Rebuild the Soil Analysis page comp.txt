@@ -1,0 +1,89 @@
+Rebuild the Soil Analysis page completely with 
+this new architecture:
+
+When user opens the page, automatically fetch 
+their GPS location using browser geolocation API.
+No manual input needed from the user.
+
+After getting location coordinates call these 
+APIs simultaneously:
+
+1. SoilGrids API from ISRIC 
+   URL: https://rest.isric.org/soilgrids/v2.0/
+   properties/query
+   No API key needed
+   Get: soil pH, nitrogen, organic carbon, 
+   clay percentage, sand percentage, 
+   soil texture classification
+
+2. NASA POWER API
+   URL: https://power.larc.nasa.gov/api/temporal/
+   daily/point
+   No API key needed
+   Get: soil moisture, soil temperature, 
+   rainfall data
+
+3. Tomorrow.io API (already in project)
+   Get: rainfall forecast for next 7 days,
+   humidity, temperature
+
+After getting all 3 API responses send everything 
+to Groq with this instruction:
+You are an expert Indian soil scientist and 
+agricultural advisor. Based on the soil and 
+weather data provided, generate a complete 
+soil analysis report with:
+- Soil type name and description
+- Soil health score out of 100
+- Top 5 best crops for this soil right now
+- Fertilizer recommendations with NPK values
+- Irrigation advice based on soil moisture
+- Rain forecast impact on farming
+- Soil improvement tips
+- Warnings if any nutrient is deficient
+
+Display results in these premium cards:
+
+Card 1 - Location and Soil Type (green)
+  Show detected location name, soil classification,
+  soil texture, color indicator
+
+Card 2 - Soil Health Score (blue)
+  Animated circular score out of 100
+  pH level with safe range indicator
+  Nitrogen level badge
+  Organic carbon percentage
+  Clay and sand ratio bar
+
+Card 3 - Best Crops Right Now (orange)
+  Top 5 crops ranked with icons
+  Each crop shows expected yield and season
+  Highlight the single best crop recommendation
+
+Card 4 - Weather and Rain Forecast (purple)
+  7 day rainfall forecast from Tomorrow.io
+  Soil moisture trend
+  Best days to plant or irrigate
+  Rain risk warnings
+
+Card 5 - Fertilizer Plan (teal)
+  Recommended fertilizers
+  NPK ratio specific to this soil
+  Application schedule
+  Dosage per acre
+
+Card 6 - Soil Improvement Tips (green)
+  3 to 5 actionable tips
+  Recovery timeline
+  Long term soil health advice
+
+Show a loading state while APIs are being called 
+with text showing which data is being fetched.
+
+If geolocation is denied by user show a district 
+and state input form as fallback and use that 
+to get coordinates.
+
+Everything should feel automated and intelligent.
+User should feel like the app already knows 
+everything about their farm just by opening the page.

@@ -1,0 +1,41 @@
+We need to fix the CORS error happening in the Plant 
+Diagnosis page. The problem is that PlantNet API and 
+Plant.id API are being called directly from the React 
+frontend which is not allowed.
+
+The fix is to create a Supabase Edge Function called 
+"plant-diagnosis" that acts as a backend server.
+
+Here is exactly what the Edge Function should do:
+- Receive the plant image as base64 and plant name 
+  from the frontend
+- Call PlantNet API from the server side to identify 
+  the plant species
+- Call Plant.id health assessment API from the server 
+  side to detect diseases, get treatment details, 
+  fertilizer recommendations and prevention tips
+- Send both API results to Groq for sanitization and 
+  beautification into 6 structured cards
+- Return the final clean JSON result back to frontend
+- Handle CORS properly so localhost can call it
+
+These are the API keys to store as Supabase secrets:
+- PLANTNET_API_KEY = 2b10Ey55bjz79FAFIhc1cUdh1O
+- PLANTID_API_KEY = n3QPuxSsdKz4ScXS1TQImhPGxVln6kjhmjobtn2IM1cTNnSTMx
+- GROQ_API_KEY = use the existing one from .env
+
+After creating the Edge Function, update the frontend 
+Diagnosis page to stop calling PlantNet and Plant.id 
+directly and instead call only the Supabase Edge 
+Function using supabase.functions.invoke.
+
+The frontend flow should remain:
+Upload image to Cloudinary first, then convert to 
+base64, then send to Supabase Edge Function, then 
+receive the sanitized result, then render the 6 
+premium cards, then save the result to Firestore 
+diagnosis history.
+
+Make sure no API keys are visible in the frontend 
+code or browser at all. Everything sensitive must 
+stay inside the Supabase Edge Function only.

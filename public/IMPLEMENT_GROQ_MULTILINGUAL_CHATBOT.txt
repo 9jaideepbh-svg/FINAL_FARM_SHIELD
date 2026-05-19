@@ -1,0 +1,67 @@
+# IMPLEMENTATION: GROQ MULTILINGUAL AI CHATBOT (LLAMA 3)
+
+## Objective
+Enhance the existing Groq Voice AI Chatbot to support forced multilingual responses (all major Indian languages) based on a user-selected dropdown, regardless of the input language (text or voice). The AI (Llama model) must provide detailed, comprehensive answers rather than short replies.
+
+---
+
+## 1. UI & State Architecture
+- **Language Dropdown Component**: 
+  - Integrate a sleek, glassmorphic Shadcn UI dropdown menu in the chatbot header next to the mic icon (matching the provided reference image).
+  - **Supported Languages**: English, Hindi (हिंदी), Kannada (ಕನ್ನಡ), Telugu (తెలుగు), Tamil (தமிழ்), Marathi (मराठी), Bengali (বাংলা), Gujarati (ગુજરાતી), Malayalam (മലയാളം), Punjabi (ਪੰਜਾਬી), Odia (ଓଡ଼ିଆ), and Urdu (اردو).
+- **State Management**: 
+  - Track `selectedLanguage` in React State.
+  - Set default to "English (English)".
+  - When the user taps the mic or starts typing, visually confirm the language being used.
+
+---
+
+## 2. Groq API & LLM Prompt Engineering
+- **System Prompt Injection**:
+  - The core of this feature relies on dynamic system prompt injection.
+  - Update the `messages` array sent to `groq.chat.completions.create` to include a strict system instruction.
+  - **Prompt Template**:
+    ```text
+    "You are a highly intelligent and expert agricultural AI assistant for Farm Shield. 
+    CRITICAL INSTRUCTION: You MUST reply to the user EXCLUSIVELY in ${selectedLanguage}. 
+    Even if the user asks a question in English or another language, your response MUST be in ${selectedLanguage}.
+    Your answers must be highly detailed, elaborate, and comprehensive. Do not provide short or brief replies. Break down complex farming concepts into easy-to-understand but thorough explanations."
+    ```
+
+---
+
+## 3. Voice / Audio Pipeline Integration
+- **Speech-to-Text (Whisper)**:
+  - When the user records voice, the audio is sent to Whisper (or similar STT) for transcription.
+  - The transcription might return in the native language or English.
+- **Enforcing Output**:
+  - The transcribed text is passed to the Groq Llama model. 
+  - Because of the strict System Prompt (Step 2), the Llama model will accurately translate and respond in the `selectedLanguage`, ensuring a seamless experience even if the user speaks in broken languages or mixed dialects.
+
+---
+---
+
+# STRUCTURED PROMPT FOR ANTIGRAVITY (COPY & PASTE TO EXECUTE)
+
+**Hey Antigravity, please implement the Multilingual Groq Chatbot feature step-by-step as outlined below. Do not rush, implement one step at a time to ensure high quality and to avoid burning credits.**
+
+### Step 1: UI and State Implementation
+- Locate the Groq Chatbot component (e.g., `src/components/ChatBot.tsx` or similar).
+- Add a React state variable `selectedLanguage` defaulting to "English".
+- Build a premium Shadcn UI dropdown menu in the header (next to the mic icon) allowing the user to select from all major Indian languages (Hindi, Kannada, Telugu, Tamil, Marathi, Bengali, Gujarati, Malayalam, Punjabi).
+- Ensure the dropdown matches the glassmorphic, soft-shadow, premium aesthetic of Farm Shield.
+- **Stop and wait for my approval before proceeding.**
+
+### Step 2: System Prompt Modification
+- Locate the API call to Groq (Llama model) within the chatbot logic or backend serverless function.
+- Inject a dynamic System Message at the very beginning of the messages array:
+  `{ role: "system", content: "You are an expert agricultural assistant. You MUST reply ONLY in ${selectedLanguage}. Provide detailed, elaborate, and comprehensive answers. Do not give short replies." }`
+- Ensure that this `selectedLanguage` variable correctly receives the state from the frontend.
+- **Stop and wait for my approval before proceeding.**
+
+### Step 3: Voice Integration & Testing
+- Ensure that the audio transcription (Speech-to-Text) payload is correctly passed to this updated Groq API call.
+- Verify that regardless of what language the STT transcribes, the Groq Llama model forces the output into the `selectedLanguage`.
+- Add a visual indicator in the chat UI (like a small badge) that says "Replying in {selectedLanguage}".
+- Clean up any unused imports or console logs.
+- **Stop and wait for my final review.**

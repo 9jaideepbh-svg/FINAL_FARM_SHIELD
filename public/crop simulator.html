@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Shield - Crop Simulator UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0a0d12;
+            --panel-bg: rgba(20, 24, 33, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --neon-green: #00ff66;
+            --neon-blue: #00ccff;
+            --neon-silver: #a0aab5;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            /* Cyber data matrix background effect */
+            background-image: 
+                radial-gradient(circle at 50% 30%, rgba(15, 32, 67, 0.4) 0%, transparent 70%),
+                radial-gradient(rgba(0, 255, 102, 0.03) 1px, transparent 0);
+            background-size: 100% 100%, 32px 32px;
+        }
+
+        /* Abstract data grid line backdrop simulating the image */
+        body::after {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            height: 50%;
+            background: radial-gradient(ellipse at center, rgba(0, 204, 255, 0.05), transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* --- STYLIZED GLOWING CAPSULE HEADER --- */
+        .header-nav {
+            width: 90%;
+            max-width: 1400px;
+            margin-top: 25px;
+            background: rgba(13, 17, 23, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 100px;
+            padding: 14px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 10;
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+        
+        .logo-text span {
+            font-size: 0.75rem;
+            vertical-align: super;
+            opacity: 0.7;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links a:hover, .nav-links .active a {
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255,255,255,0.6);
+        }
+
+        .nav-right-items {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .history-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .user-profile {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        }
+
+        /* --- MAIN DASHBOARD BODY --- */
+        .dashboard-main {
+            width: 90%;
+            max-width: 1400px;
+            z-index: 2;
+            margin-top: 50px;
+            flex-grow: 1;
+        }
+
+        .section-header {
+            margin-bottom: 35px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .section-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* --- 3D TACTICAL INPUT GRID --- */
+        .input-control-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 11fr);
+            gap: 20px;
+            margin-bottom: 45px;
+        }
+
+        /* Highly stylized tactical card structure */
+        .tactical-card {
+            background: linear-gradient(145deg, #161c26, #0f131a);
+            border-radius: 14px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 
+                0 15px 35px rgba(0,0,0,0.4),
+                inset 0 1px 1px rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        /* Specific Glowing Trims matching the reference image */
+        .card-green { 
+            border-top: 2px solid var(--neon-green); 
+            box-shadow: inset 0 4px 12px rgba(0, 255, 102, 0.05), 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .card-blue { 
+            border-top: 2px solid var(--neon-blue); 
+            box-shadow: inset 0 4px 12px rgba(0, 204, 255, 0.05), 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .card-silver-1 { 
+            border-top: 2px solid #5e6670; 
+            box-shadow: inset 0 4px 12px rgba(255,255,255,0.02), 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .card-silver-2 { 
+            border-top: 2px solid #474f59; 
+        }
+
+        .card-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .tactical-input-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .tactical-select, .tactical-input {
+            width: 100%;
+            background: rgba(8, 10, 14, 0.7);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 14px 16px;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            outline: none;
+            appearance: none;
+            letter-spacing: 0.5px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tactical-input::placeholder {
+            color: #4b5563;
+        }
+
+        .select-arrow {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-left: 2px solid #4b5563;
+            border-bottom: 2px solid #4b5563;
+            transform: translateY(-70%) rotate(-45deg);
+            pointer-events: none;
+        }
+
+        /* --- AGGRESSIVE INTERACTIVE ACTION BUTTON --- */
+        .action-flex-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .btn-simulate-thruster {
+            position: relative;
+            background: linear-gradient(180deg, #1e6b3f 0%, #124527 100%);
+            border: 2px solid #2ae27a;
+            border-radius: 12px;
+            padding: 20px 75px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.4rem;
+            color: #ffffff;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 102, 0.25),
+                inset 0 2px 3px rgba(255,255,255,0.3),
+                0 10px 20px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
+        }
+
+        .btn-simulate-thruster:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(180deg, #24824d 0%, #175732 100%);
+            box-shadow: 
+                0 0 45px rgba(0, 255, 102, 0.5),
+                inset 0 2px 3px rgba(255,255,255,0.4),
+                0 12px 24px rgba(0,0,0,0.5);
+        }
+
+        .btn-simulate-thruster:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
+        }
+
+        /* Kinetic lightning effect lines surrounding button */
+        .btn-simulate-thruster::before, .btn-simulate-thruster::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 100%;
+            top: 0;
+            background: transparent;
+            pointer-events: none;
+        }
+        .btn-simulate-thruster::before {
+            left: -25px;
+            border-left: 2px solid rgba(0, 255, 102, 0.3);
+            border-top: 2px solid rgba(0, 255, 102, 0.3);
+            border-bottom: 2px solid rgba(0, 255, 102, 0.3);
+            border-radius: 6px 0 0 6px;
+        }
+        .btn-simulate-thruster::after {
+            right: -25px;
+            border-right: 2px solid rgba(0, 255, 102, 0.3);
+            border-top: 2px solid rgba(0, 255, 102, 0.3);
+            border-bottom: 2px solid rgba(0, 255, 102, 0.3);
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Yield Badge next to main trigger */
+        .badge-maximize {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 18px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .badge-maximize svg {
+            fill: #ffaa00;
+            width: 14px;
+            height: 14px;
+        }
+
+        /* --- 3D TACTICAL DASHBOARD FOOTER PANELS --- */
+        .dashboard-footer-grid {
+            display: grid;
+            grid-template-columns: 2.5fr 1.2fr 1.8fr 2fr;
+            gap: 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 35px;
+            margin-bottom: 40px;
+        }
+
+        .footer-panel {
+            background: linear-gradient(135deg, #111622 0%, #0b0e14 100%);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 10px 20px rgba(0,0,0,0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Leftmost Panel: Branding */
+        .footer-brand-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .brand-icon-wrapper {
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid rgba(0, 255, 102, 0.3);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .footer-brand-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .footer-brand-desc {
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        /* Circuit board background trace lines decoration via SVG */
+        .circuit-decor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.12;
+            pointer-events: none;
+        }
+
+        /* Quick Links Row List styling */
+        .panel-heading {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .quick-links-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .quick-link-item {
+            background: rgba(18, 24, 36, 0.8);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+        }
+
+        .quick-link-item:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(255,255,255,0.1);
+            transform: translateX(4px);
+        }
+
+        /* Social Connection Cluster styling */
+        .social-wrapper {
+            display: flex;
+            gap: 12px;
+            margin-top: 5px;
+        }
+
+        .social-icon-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .social-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .social-icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-primary);
+        }
+
+        /* Base floor container element settings */
+        .base-floor {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 25px;
+            margin-top: auto;
+        }
+
+        .copyright-text {
+            font-size: 0.75rem;
+            color: #4b5563;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        /* Mechanical sliders track at the extreme bottom edge center */
+        .slider-rail-system {
+            background: #0f131a;
+            border: 1px solid rgba(255,255,255,0.05);
+            width: 180px;
+            height: 8px;
+            border-radius: 30px;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .slider-node {
+            width: 28px;
+            height: 14px;
+            background: linear-gradient(180deg, #525a66 0%, #2e3540 100%);
+            border: 1px solid #788394;
+            border-radius: 4px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+
+        /* Rightmost floating controller triggers */
+        .utility-dock {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            z-index: 100;
+        }
+
+        .utility-trigger {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #18202c, #0e121a);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+
+        .utility-trigger:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 204, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .utility-trigger svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary);
+        }
+
+        .utility-trigger:hover svg {
+            fill: #ffffff;
+        }
+
+        /* --- RESPONSIVE OPTIMIZATIONS --- */
+        @media (max-width: 1200px) {
+            .input-control-panel { grid-template-columns: repeat(2, 1fr); }
+            .dashboard-footer-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .input-control-panel { grid-template-columns: 1fr; }
+            .dashboard-footer-grid { grid-template-columns: 1fr; }
+            .header-nav { border-radius: 20px; padding: 15px; flex-direction: column; gap: 15px; }
+            .nav-links { flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="header-nav">
+        <div class="logo-text">FARM SHIELD<span>®</span></div>
+        <ul class="nav-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">Krishi Setu</a></li>
+            <li><a href="#">Kisan Times</a></li>
+            <li><a href="#">Diagnosis</a></li>
+            <li><a href="#">Price Forecasting</a></li>
+            <li class="active"><a href="#">Crop Simulator</a></li>
+            <li><a href="#">Weather</a></li>
+            <li><a href="#">Soil Analysis</a></li>
+        </ul>
+        <div class="nav-right-items">
+            <div class="history-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                History
+            </div>
+            <div class="user-profile"></div>
+        </div>
+    </nav>
+
+    <main class="dashboard-main">
+        <header class="section-header">
+            <h1 class="section-title">Crop Simulator</h1>
+            <p class="section-subtitle">What-If AI Crop Planner</p>
+        </header>
+
+        <section class="input-control-panel">
+            <div class="tactical-card card-green">
+                <div class="card-label">Select Crop</div>
+                <div class="tactical-input-container">
+                    <select class="tactical-select">
+                        <option>E.g. Paddy</option>
+                        <option>Wheat</option>
+                        <option>Maize</option>
+                    </select>
+                    <div class="select-arrow"></div>
+                </div>
+            </div>
+
+            <div class="tactical-card card-blue">
+                <div class="card-label">District</div>
+                <div class="tactical-input-container">
+                    <input type="text" class="tactical-input" placeholder="Enter district name">
+                </div>
+            </div>
+
+            <div class="tactical-card card-silver-1">
+                <div class="card-label">State</div>
+                <div class="tactical-input-container">
+                    <select class="tactical-select">
+                        <option>Select state</option>
+                        <option>Punjab</option>
+                        <option>Maharashtra</option>
+                        <option>Karnataka</option>
+                    </select>
+                    <div class="select-arrow"></div>
+                </div>
+            </div>
+
+            <div class="tactical-card card-silver-2">
+                <div class="card-label">Month of Planting</div>
+                <div class="tactical-input-container">
+                    <select class="tactical-select">
+                        <option>Select month</option>
+                        <option>January</option>
+                        <option>June</option>
+                        <option>October</option>
+                    </select>
+                    <div class="select-arrow"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="action-flex-container">
+            <button class="btn-simulate-thruster">Simulate Season</button>
+            <div class="badge-maximize">
+                <svg viewBox="0 0 24 24"><path d="M11 21h-1l1-7H4.5c-.58 0-.91-.42-.76-.95l2.5-8.83C6.46 3.47 7.05 3 7.7 3h6.3c.73 0 1.18.58.98 1.34l-1.93 6.66H20c.62 0 .92.46.72 1.05l-7.3 11.23c-.42.66-1.2.32-1.3-.28z"/></svg>
+                MAXIMIZE YIELD!
+            </div>
+        </div>
+
+        <footer class="dashboard-footer-grid">
+            <div class="footer-panel">
+                <div class="footer-brand-header">
+                    <div class="brand-icon-wrapper">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00ff66" stroke-width="2.5"><path d="M2 22s1-8 10-8 10 8 10 8"/><path d="M12 2v12"/></svg>
+                    </div>
+                    <div class="footer-brand-title">Farm Shield</div>
+                </div>
+                <p class="footer-brand-desc">
+                    AI-powered plant disease diagnosis and farming advisory for modern agriculture. Helping farmers protect their crops with cutting-edge technology.
+                </p>
+                <svg class="circuit-decor" viewBox="0 0 200 100">
+                    <path d="M0,80 L40,80 L60,60 L120,60 L140,40 L200,40 M60,60 L70,70 L110,70" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" fill="none"/>
+                    <circle cx="40" cy="80" r="3" fill="#00ff66"/>
+                    <circle cx="140" cy="40" r="3" fill="#00ccff"/>
+                </svg>
+            </div>
+
+            <div class="footer-panel">
+                <svg class="circuit-decor" style="opacity: 0.25;" viewBox="0 0 100 100">
+                    <path d="M10,20 L30,20 L40,30 L80,30 M30,20 L40,10 L70,10 M50,30 L60,40 L90,40 M20,60 L50,60 L60,50 L80,50 M50,60 L60,70 L90,70" stroke="currentColor" stroke-width="1" fill="none"/>
+                    <circle cx="80" cy="30" r="2" fill="currentColor"/>
+                    <circle cx="70" cy="10" r="2" fill="currentColor"/>
+                    <circle cx="80" cy="50" r="2" fill="currentColor"/>
+                </svg>
+            </div>
+
+            <div class="footer-panel">
+                <div class="panel-heading">Quick Links</div>
+                <div class="quick-links-list">
+                    <div class="quick-link-item">Plant Diagnosis</div>
+                    <div class="quick-link-item">Diagnosis History</div>
+                    <div class="quick-link-item">Sign In</div>
+                </div>
+            </div>
+
+            <div class="footer-panel">
+                <div class="panel-heading">Connect</div>
+                <div class="social-wrapper">
+                    <div class="social-icon-btn">
+                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </div>
+                    <div class="social-icon-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                    </div>
+                </div>
+                <svg class="circuit-decor" viewBox="0 0 100 100" style="opacity: 0.08;">
+                    <path d="M-10,50 Q20,30 50,60 T110,40 M-10,60 Q20,40 50,70 T110,50 M-10,70 Q20,50 50,80 T110,60" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+                </svg>
+            </div>
+        </footer>
+    </main>
+
+    <div class="base-floor">
+        <div class="copyright-text">© 2026 Farm Shield. All rights reserved.</div>
+        <div class="slider-rail-system">
+            <div class="slider-node"></div>
+        </div>
+    </div>
+
+    <div class="utility-dock">
+        <div class="utility-trigger">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <div class="utility-trigger">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </div>
+    </div>
+
+</body>
+</html>
