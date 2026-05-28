@@ -35,7 +35,7 @@ export const Header = memo(function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 w-full pt-6 px-4">
       <div className="container max-w-[1600px] mx-auto p-0">
         <GlassSurface width="100%" height="auto" borderRadius={40} opacity={0.7} backgroundOpacity={0.2} distortionScale={0} blur={20} className="w-full shadow-lg border border-white/20">
-          <div className="flex h-16 md:h-20 items-center justify-between px-6 md:px-8 w-full gap-4">
+          <div className="flex h-16 md:h-20 items-center justify-between px-4 md:px-8 xl:px-4 2xl:px-8 w-full gap-2 md:gap-4 xl:gap-2 2xl:gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0 group">
               <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-green-400 p-0.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
@@ -44,16 +44,16 @@ export const Header = memo(function Header() {
                   e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center"><svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></div>';
                 }} />
               </div>
-              <span className="text-xl md:text-2xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-emerald-800 to-emerald-950">FARM SHIELD<sup className="text-sm font-medium text-emerald-600">®</sup></span>
+              <span className="text-xl md:text-2xl xl:text-xl 2xl:text-2xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-emerald-800 to-emerald-950">FARM SHIELD<sup className="text-sm font-medium text-emerald-600">®</sup></span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden xl:flex items-center justify-center gap-3 lg:gap-5 flex-1 px-2 overflow-hidden">
+            <nav className="hidden xl:flex items-center justify-center gap-2 xl:gap-3 2xl:gap-5 flex-1 px-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
-                  className={`text-sm font-medium whitespace-nowrap transition-colors hover:text-gray-900 ${
+                  className={`text-[13px] 2xl:text-sm font-medium whitespace-nowrap transition-colors hover:text-gray-900 ${
                     location.pathname === link.href ? "text-gray-900" : "text-gray-600"
                   }`}
                 >
