@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFImage } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { DiagnosisHistoryRecord } from "./diagnosisHistory";
 
@@ -39,6 +39,25 @@ export async function generateDiagnosisPDF(
   if (!diagnosis) {
     throw new Error("Diagnosis data is missing the full AI response.");
   }
+
+  // ── Defensive field normalization (guards against missing data from callers) ─
+  const safeRecord: DiagnosisHistoryRecord = {
+    ...record,
+    id: record.id ?? "unknown",
+    plantName: record.plantName ?? diagnosis.plantIdentification?.commonName ?? "Unknown Plant",
+    timestamp: (() => {
+      try {
+        const d = new Date(record.timestamp);
+        if (isNaN(d.getTime())) throw new Error("invalid");
+        return record.timestamp;
+      } catch {
+        return new Date().toISOString();
+      }
+    })(),
+  };
+  // Reassign so all downstream code uses safeRecord
+  Object.assign(record, safeRecord);
+
 
   // 1. Create a new PDF document
   const pdfDoc = await PDFDocument.create();
@@ -86,57 +105,7 @@ export async function generateDiagnosisPDF(
     }
   }
 
-  // 3b. Try fetching and embedding the logo (favicon.ico)
-  let logoImg: PDFImage | null = null;
-  try {
-    const logoResponse = await fetch("/favicon.ico");
-    if (logoResponse.ok) {
-      const icoBuffer = await logoResponse.arrayBuffer();
-      const view = new DataView(icoBuffer);
-      // ICO magic Check: reserved = 0, type = 1
-      if (view.byteLength >= 6 && view.getUint16(0, true) === 0 && view.getUint16(2, true) === 1) {
-        const numImages = view.getUint16(4, true);
-        if (numImages > 0) {
-          let pngOffset = 0;
-          let pngSize = 0;
-          for (let i = 0; i < numImages; i++) {
-            const entryOffset = 6 + i * 16;
-            if (entryOffset + 16 <= view.byteLength) {
-              const size = view.getUint32(entryOffset + 8, true);
-              const dataOffset = view.getUint32(entryOffset + 12, true);
-              if (dataOffset + 8 <= icoBuffer.byteLength) {
-                const u8 = new Uint8Array(icoBuffer, dataOffset, 8);
-                const isPng = u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4E && u8[3] === 0x47;
-                if (isPng) {
-                  pngOffset = dataOffset;
-                  pngSize = size;
-                  break;
-                }
-              }
-              if (i === 0) {
-                pngOffset = dataOffset;
-                pngSize = size;
-              }
-            }
-          }
-          if (pngOffset > 0 && pngSize > 0 && pngOffset + pngSize <= icoBuffer.byteLength) {
-            const pngBytes = new Uint8Array(icoBuffer.slice(pngOffset, pngOffset + pngSize));
-            logoImg = await pdfDoc.embedPng(pngBytes);
-          }
-        }
-      } else if (view.byteLength >= 4) {
-        const u8 = new Uint8Array(icoBuffer, 0, 4);
-        const isPng = u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4E && u8[3] === 0x47;
-        if (isPng) {
-          logoImg = await pdfDoc.embedPng(new Uint8Array(icoBuffer));
-        } else {
-          logoImg = await pdfDoc.embedJpg(new Uint8Array(icoBuffer));
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("[PDF] Could not embed logo image from favicon.ico:", err);
-  }
+  // 3b. Logo is drawn as geometric shapes — no image embedding needed (avoids ICO/PNG parsing bugs)
 
   // 4. Page layout config
   const PAGE_WIDTH = 595.27; // A4 Width
@@ -201,18 +170,28 @@ export async function generateDiagnosisPDF(
       color: PRIMARY_GREEN,
     });
 
-    // Logo & Title
-    if (logoImg) {
-      page.drawImage(logoImg, {
-        x: MARGIN,
-        y: PAGE_HEIGHT - 38,
-        width: 18,
-        height: 18,
-      });
-    }
+    // Geometric logo mark — a small green rounded square with 'FS' initials
+    const logoX = MARGIN;
+    const logoY = PAGE_HEIGHT - 39;
+    const logoSize = 18;
+    page.drawRectangle({
+      x: logoX,
+      y: logoY,
+      width: logoSize,
+      height: logoSize,
+      color: PRIMARY_GREEN,
+      borderRadius: 4,
+    });
+    page.drawText("FS", {
+      x: logoX + 3,
+      y: logoY + 5,
+      size: 8,
+      font: fontBold,
+      color: WHITE,
+    });
 
     page.drawText("FARM SHIELD", {
-      x: logoImg ? MARGIN + 24 : MARGIN,
+      x: MARGIN + 24,
       y: PAGE_HEIGHT - 34,
       size: 13,
       font: fontBold,
@@ -220,7 +199,7 @@ export async function generateDiagnosisPDF(
     });
 
     page.drawText("AI Plant Diagnosis Report", {
-      x: logoImg ? MARGIN + 120 : MARGIN + 100,
+      x: MARGIN + 120,
       y: PAGE_HEIGHT - 34,
       size: 10,
       font: fontBold,
@@ -891,19 +870,36 @@ export async function generateDiagnosisPDF(
     });
   });
 
-  // 5. Save the generated PDF bytes and download to the browser
-  const pdfBytes = await pdfDoc.save();
-  const blob = new Blob([pdfBytes], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-
-  // Trigger browser download
-  const link = document.createElement("a");
-  link.href = url;
   const dateStr = new Date(record.timestamp).toISOString().split("T")[0];
   const safeName = (record.plantName || "Plant").replace(/[^a-zA-Z0-9]/g, "_");
-  link.download = `FarmShield_Diagnosis_Report_${safeName}_${dateStr}.pdf`;
+  const fileName = `FarmShield_Diagnosis_Report_${safeName}_${dateStr}.pdf`;
+
+  const pdfBytes = await pdfDoc.save();
+  const blob = new Blob([pdfBytes], { type: "application/pdf" });
+
+  // Try the modern File System API first to prompt the user with a "Save As" dialogue box
+  if ("showSaveFilePicker" in window) {
+    try {
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description: "PDF Document", accept: { "application/pdf": [".pdf"] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch (err: any) {
+      // User cancelled picker or API unavailable — fall through to anchor download
+      if (err?.name === "AbortError") return;
+    }
+  }
+
+  // Fallback: Use a data URI to bypass blob UUID filename issues and enforce .pdf extension
+  const dataUri = await pdfDoc.saveAsBase64({ dataUri: true });
+  const link = document.createElement("a");
+  link.href = dataUri;
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

@@ -1,0 +1,74 @@
+Hey Anti-Gravity,
+
+There are two major UI/UX improvements that need to be fixed carefully.
+
+1. Navigation Loading Spinner Issue
+   Currently, whenever the user shifts from one feature/page to another through the navigation bar, a black loading interface with a green loading spinner appears in the center for a short time.
+
+This should NOT happen during normal navigation.
+
+Problem:
+
+- While moving between features/pages, the app briefly shows:
+  - black loading screen
+  - green spinner loader
+- This breaks the smooth premium experience of the application.
+
+Required Fix:
+
+- Remove the loading spinner and black loading overlay during regular feature-to-feature navigation.
+- Navigation between:
+  - Homepage
+  - Krishi Setu
+  - Kisan Times
+  - Soil Intelligence
+  - Government Schemes
+  - Diagnosis
+  - Weather
+  - Price Forecasting
+    should feel smooth and instant.
+
+Important:
+
+- The green loading spinner should ONLY appear during:
+  
+  - extremely slow internet
+  - delayed API responses
+  - actual long loading operations
+  - heavy backend fetch scenarios.
+
+- For normal page switching/navigation:
+  
+  - no loading overlay
+  - no black screen
+  - no spinner flash
+  - no transition interruption.
+
+Goal:
+Navigation should feel seamless, cinematic, and fluid.
+
+2. Voice Chat Exit / Close Issue
+   The voice chatbot itself is working properly.
+
+However, there is currently no smooth exit/close interaction for the voice chat modal/interface.
+
+Required Fix:
+
+- Add a visible close/cross icon/button somewhere appropriate inside the voice chat UI.
+- User should be able to tap the close button to instantly exit the voice chat.
+
+Additionally:
+
+- If the user taps anywhere outside the voice chat area/modal/container, the voice chatbot should automatically close.
+- Clicking outside the chatbot should dismiss it naturally.
+
+Expected Behavior:
+
+- smooth open/close transitions
+- proper modal dismissal
+- no stuck overlay state
+- clean user interaction.
+
+Important:
+Do not redesign the voice chat UI.
+Only improve the interaction and exit behavior while preserving the current visual design and animations.

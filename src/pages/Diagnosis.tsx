@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { m, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle, Microscope, CloudUpload, Leaf, CheckCircle2, Sparkles, Download } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
@@ -76,6 +77,18 @@ export default function Diagnosis() {
 
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothX = useSpring(mouseX, { damping: 50, stiffness: 400 });
+  const smoothY = useSpring(mouseY, { damping: 50, stiffness: 400 });
+  const bgGradient = useMotionTemplate`radial-gradient(800px circle at ${smoothX}px ${smoothY}px, rgba(34,197,94,0.12), transparent 80%)`;
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => { mouseX.set(e.clientX); mouseY.set(e.clientY); };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
+
   useEffect(() => {
     if (authLoaded && !user) {
       navigate("/auth");
@@ -91,8 +104,18 @@ export default function Diagnosis() {
         id: "active-session",
         userId: user.id,
         imageUrl: enhancedImageUrl ?? cloudinaryImageUrl ?? previewUrl ?? "",
-        plantName: result.plantName,
+        plantName: result.plantName ?? result.plantIdentification?.commonName ?? "Unknown Plant",
+        scientificName: result.plantIdentification?.scientificName ?? "",
+        diseaseName: result.diseaseDetection?.diseaseName ?? "Unknown",
+        isHealthy: result.diseaseDetection?.isHealthy ?? true,
+        severity: result.diseaseDetection?.severity ?? "none",
+        overallConfidence: result.confidenceScore?.overallConfidence ?? 0,
+        groqSummary: result.groqSummary ?? "",
         groqResponse: result,
+        treatmentSummary: result.treatmentPlan?.summary ?? "",
+        fertilizerCount: result.fertilizerRecommendations?.length ?? 0,
+        timestamp: result.diagnosisDate ?? new Date().toISOString(),
+        createdAt: null,
       };
 
       await generateDiagnosisPDF(record as DiagnosisHistoryRecord);
@@ -250,7 +273,8 @@ export default function Diagnosis() {
 
   return (
     <Layout>
-      <div className="container py-8 md:py-12 max-w-4xl">
+      <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+      <div className="container py-8 md:py-12 max-w-4xl relative z-10">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4">

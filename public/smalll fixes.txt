@@ -1,0 +1,57 @@
+Hello Google Antigravity,
+
+There are currently two important UI/UX issues that need to be fixed in the application.
+
+1. Hero Section Fallback Image Issue
+
+- On the homepage, the hero section video initially works properly.
+- However, when navigating to other sections/features such as:
+  - Krishi Setu
+  - Government Schemes
+  - Soil Intelligence
+  - or any other feature,
+    and then returning back to the homepage,
+    the fallback image briefly appears for about 1 second before the hero video loads again.
+
+This should NOT happen.
+
+Required Fix:
+
+- Whenever the user navigates back to the homepage from any tab or feature, the hero section video should load and play immediately without showing the fallback image even for a moment.
+- Remove if any :- 
+  - fallback image flash
+  - loading flicker
+  - temporary placeholder rendering
+  - white/black frame issue.
+- The transition back to homepage should feel smooth and seamless.
+
+2. Scroll Position Reset Issue
+   Currently, the scroll position is being preserved incorrectly between pages.
+
+Example:
+
+- User scrolls to the bottom of Krishi Setu.
+- Then navigates to Government Schemes.
+- Government Schemes page also opens from the bottom instead of starting from the top.
+
+Similarly:
+
+- If the user is at the bottom of Soil Intelligence and navigates to Homepage,
+- Homepage also opens from the bottom.
+
+This creates a very poor navigation experience.
+
+Required Fix:
+
+- Whenever the user switches to any new page/feature/tab, the page should always start from the TOP automatically.
+- On every route/page navigation:
+  - reset scroll position to top
+  - smooth transition
+  - no preserved scroll from previous page.
+
+Expected Behavior:
+
+- Every new page opens from top.
+- Navigation should feel clean, natural, and professional.
+
+Please implement both fixes carefully without affecting the existing UI design, animations, transitions, or responsiveness.

@@ -1,0 +1,87 @@
+Now the next set of improvements to implement in the app:
+
+1. price forcasting Integration via Supabase Edge Function
+
+* The AGMarket API is currently not working properly which i will provide which is used to fetch data for price forcasting
+* Move the complete AGMarket API calling logic into a Supabase Edge Function.
+* Do NOT expose the AGMarket API key in the frontend under any circumstance.
+* I will provide the AGMarket API key separately.
+* The frontend should only call the secure Edge Function endpoint.
+* After receiving AGMarket data, sanitize and process the output using the existing Grok API integration before displaying results to users.
+* Ensure proper error handling, retries, loading states, and fallback messages are implemented.
+
+2. Expand Karnataka Crop Selection List
+
+* In the crop selection dropdown/page, only a few crop examples are currently shown.
+* Replace this with a comprehensive Karnataka crop database/list.
+* Include all major and commonly grown Karnataka crops such as:
+
+  * Rice
+  * Ragi
+  * Maize
+  * Jowar
+  * Bajra
+  * Sugarcane
+  * Cotton
+  * Tomato
+  * Onion
+  * Potato
+  * Chilli
+  * Groundnut
+  * Sunflower
+  * Turmeric
+  * Coconut
+  * Arecanut
+  * Banana
+  * Mango
+  * Grapes
+  * Coffee
+  * Pepper
+  * Cardamom
+  * Pulses
+  * Vegetables
+  * Millets
+  * Horticulture crops
+  * and other Karnataka-supported crops.
+* Add proper search/filter functionality inside the crop selector for better UX.
+
+3. Kisan Times Edge Function Fix
+
+* Kisan Times currently has an Edge Function issue.
+* Use the existing Grok API key already configured.
+* Ensure Grok API calls happen only through Supabase Edge Functions.
+* Do NOT expose the Grok API key on the frontend.
+* Fix the failing Edge Function flow and ensure:
+
+  * secure API execution
+  * stable response parsing
+  * proper error handling
+  * loading and timeout handling
+  * sanitized AI-generated outputs.
+
+4. Global Green Gradient Cursor Effect
+
+* In Soil Intelligence, the green gradient cursor movement/background interaction effect is already working properly.
+* Reuse the exact same working implementation and apply it consistently to these sections:
+
+  * Weather
+  * Price Forecasting
+  * Diagnosis
+  * Government Schemes
+* Copy the existing working schema/logic from Soil Intelligence instead of rewriting from scratch.
+* Ensure:
+
+  * smooth animation performance
+  * responsive behavior
+  * no lag on mobile devices
+  * same glow intensity and interaction feel
+  * same blend/transparency behavior.
+
+5. General Requirements
+
+* Maintain secure architecture:
+
+  * all sensitive APIs must remain server-side via Supabase Edge Functions.
+* Ensure frontend never exposes API keys.
+* Preserve existing UI/UX styling while implementing these upgrades.
+* Keep all new integrations production-ready with proper loading states, fallback handling, and structured logging.

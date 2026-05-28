@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { m, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,18 @@ export default function PriceForecast() {
   const [isListening, setIsListening] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const { toast } = useToast();
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothX = useSpring(mouseX, { damping: 50, stiffness: 400 });
+  const smoothY = useSpring(mouseY, { damping: 50, stiffness: 400 });
+  const bgGradient = useMotionTemplate`radial-gradient(800px circle at ${smoothX}px ${smoothY}px, rgba(34,197,94,0.12), transparent 80%)`;
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => { mouseX.set(e.clientX); mouseY.set(e.clientY); };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
 
   useEffect(() => {
     const saved = localStorage.getItem("price_recent_searches");
@@ -217,7 +230,8 @@ export default function PriceForecast() {
   if (screen === "location") {
     return (
       <Layout>
-        <div className="container max-w-lg mx-auto py-8 px-4">
+        <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+        <div className="container max-w-lg mx-auto py-8 px-4 relative z-10">
           <h1 className="text-2xl font-bold text-center mb-2">Price Forecasting</h1>
           <p className="text-muted-foreground text-center mb-8">Real Agmarknet data + AI-powered analysis</p>
 
@@ -278,7 +292,8 @@ export default function PriceForecast() {
   if (screen === "crop") {
     return (
       <Layout>
-        <div className="container max-w-2xl mx-auto py-6 px-4">
+        <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+        <div className="container max-w-2xl mx-auto py-6 px-4 relative z-10">
           <div className="flex items-center gap-3 mb-6">
             <Button variant="ghost" size="icon" onClick={() => setScreen("location")}><ArrowLeft className="h-5 w-5" /></Button>
             <div>
@@ -327,7 +342,8 @@ export default function PriceForecast() {
   // --- Screen 3: Results Dashboard ---
   return (
     <Layout>
-      <div className="container max-w-2xl mx-auto py-6 px-4">
+      <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+      <div className="container max-w-2xl mx-auto py-6 px-4 relative z-10">
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="icon" onClick={() => { setScreen("crop"); setResult(null); }}><ArrowLeft className="h-5 w-5" /></Button>
           <div>

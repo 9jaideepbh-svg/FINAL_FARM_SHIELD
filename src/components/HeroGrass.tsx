@@ -357,6 +357,23 @@ export function HeroGrass() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", handleMouseLeave);
       
+      if (scene) {
+        scene.traverse((object) => {
+          if ((object as THREE.Mesh).isMesh) {
+            const mesh = object as THREE.Mesh;
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) {
+              if (Array.isArray(mesh.material)) {
+                mesh.material.forEach(m => m.dispose());
+              } else {
+                mesh.material.dispose();
+              }
+            }
+          }
+        });
+        scene.clear();
+      }
+
       if (renderer) {
         renderer.setAnimationLoop(null);
         if (mountRef.current && mountRef.current.contains(renderer.domElement)) {

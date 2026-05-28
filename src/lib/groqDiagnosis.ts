@@ -10,9 +10,13 @@
 import type { PlantNetResult } from "./plantnet";
 import type { PlantIdResult } from "./plantid";
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_KEY as string;
+// NOTE: This file contains local sanitization helpers only.
+// The actual Groq API call is handled server-side in the plant-diagnosis Supabase Edge Function.
+// The GROQ_API_KEY must NOT be set here — it lives only in Supabase secret storage.
+const GROQ_API_KEY = ""; // intentionally empty — see supabase/functions/plant-diagnosis/index.ts
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
+
 
 // ─── Output shape expected by DiagnosisResultCards ───────────────────────────
 

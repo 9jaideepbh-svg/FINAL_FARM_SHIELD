@@ -1,0 +1,260 @@
+You are a senior frontend performance engineer specializing 
+in React, Vite, Framer Motion, WebGL, and Three.js 
+optimization. Your task is to deeply optimize the Farm 
+Shield application for maximum performance without 
+changing any visual design, animations, effects, colors, 
+layouts, or user experience.
+
+CRITICAL RULE: Do NOT remove, redesign, or visually alter 
+anything. Only optimize how things run under the hood.
+
+---
+
+## 1. FRAMER MOTION OPTIMIZATION
+
+Find every Framer Motion usage in the project and apply 
+these optimizations:
+
+Add LazyMotion with domAnimation feature bundle to the 
+root of the app to reduce Framer Motion bundle size by 
+loading only what is needed:
+
+import { LazyMotion, domAnimation } from "framer-motion"
+Wrap the entire app with:
+<LazyMotion features={domAnimation}>
+
+Replace all motion.div with m.div after adding LazyMotion 
+because m.div is the lightweight version that uses the 
+loaded feature bundle instead of the full bundle.
+
+For all animation variants add these performance hints:
+- Add willChange: "transform" only on elements that 
+  animate position or scale
+- Add transform: "translateZ(0)" to force GPU layer 
+  on heavy animated components
+- Never add willChange to static elements
+
+For all page transition animations:
+- Use opacity and transform only
+- Never animate width, height, top, left, margin, 
+  or padding as these cause layout recalculation
+- Replace any layout-affecting animations with 
+  transform equivalents
+
+Add layout={false} to any motion component that does 
+not need layout animation to prevent unnecessary 
+layout calculation on every render.
+
+For AnimatePresence wrapping page transitions set 
+mode="wait" and add initial={false} on the first 
+render to skip entrance animation on page load.
+
+---
+
+---
+
+## 3. CURSOR SPLASH EFFECT OPTIMIZATION
+
+Find the ReactBits splash cursor component and apply:
+
+Move the cursor canvas to its own React.memo wrapped 
+component so it never re-renders due to parent state 
+changes.
+
+The canvas element must use position: fixed and 
+pointer-events: none to avoid interfering with 
+layout.
+
+Use a single requestAnimationFrame loop for cursor 
+rendering instead of multiple setInterval or 
+setTimeout calls.
+
+Throttle the mousemove event listener using 
+requestAnimationFrame:
+let rafId = null
+window.addEventListener('mousemove', (e) => {
+  if (rafId) return
+  rafId = requestAnimationFrame(() => {
+    updateCursorPosition(e.clientX, e.clientY)
+    rafId = null
+  })
+})
+
+Add will-change: transform to the cursor canvas 
+element via CSS.
+
+
+---
+
+## 4. VIDEO HERO SECTION OPTIMIZATION
+
+Find the hero video section and apply:
+
+make sure hero video loads before ,apply lazy loading and skeleton loading,give importance to home page,all should be working smooth as soom as user enters 
+
+---
+
+
+
+---
+
+## 6. REACT RENDERING OPTIMIZATION
+
+Audit the entire component tree and apply:
+
+Wrap these components with React.memo to prevent 
+unnecessary re-renders:
+- Navbar component
+- Footer component  
+- Cursor component
+- Background animation component
+- Any card component that receives static props
+
+For all useState hooks that trigger visual updates 
+check if the state change actually changes what 
+is rendered. Remove any state that is only used 
+for tracking and does not affect the visual output.
+
+Replace useState with useRef for values that change 
+frequently but do not need to trigger re-renders such 
+as cursor position, scroll position, animation 
+frame counters.
+
+Add useMemo to any expensive calculation that runs 
+inside a render function.
+
+Add useCallback to any function that is passed 
+as a prop to a child component to prevent the 
+child from re-rendering every time the parent renders.
+
+Use React.lazy and Suspense for these pages since 
+they are heavy and not needed on initial load:
+- Crop Simulator page
+- Soil Intelligence page
+- Voice feature page
+- History page
+- Diagnosis page
+
+Keep these as static imports because they are 
+above the fold or navigation critical:
+- Home page
+- Navbar
+- Landing components
+
+---
+
+
+## 8. CRITICAL CSS AND LCP OPTIMIZATION
+
+In index.html add these in the head section:
+
+Preload the hero image or poster:
+<link rel="preload" as="image" 
+      href="/hero-poster.jpg" 
+      fetchpriority="high">
+
+Preload the primary font:
+<link rel="preload" as="font" 
+      type="font/woff2" 
+      href="/fonts/primary.woff2" 
+      crossorigin>
+
+Add inline critical CSS for the hero section 
+directly in a style tag in index.html so the 
+hero renders before any CSS file loads.
+
+For all font-face declarations add:
+font-display: swap
+
+Add these meta tags for mobile performance:
+<meta name="theme-color" content="#16a34a">
+<meta name="mobile-web-app-capable" content="yes">
+
+---
+
+
+
+---
+
+## 10. starting 6 seconds black screen animations of our website
+        
+       make sure those begning animation of 6 second be soft with no lag,those fonts prerender it 
+
+---
+
+
+---
+
+## 12. MEMORY LEAK FIXES
+
+Audit all useEffect hooks and verify that every 
+event listener added inside a useEffect has a 
+cleanup function that removes it on unmount.
+
+Verify that every Three.js component disposes 
+its renderer, scene, geometries, materials and 
+textures in the useEffect cleanup function.
+
+Verify that every requestAnimationFrame loop 
+has a cancelAnimationFrame call in the cleanup.
+
+Verify that every WebSocket or Supabase 
+realtime subscription is unsubscribed on unmount.
+
+Check for any setInterval calls that are not 
+cleared on component unmount and fix them.
+
+---
+
+## 13. MOBILE SPECIFIC OPTIMIZATION
+
+Detect low-end devices using:
+const isLowEnd = navigator.hardwareConcurrency <= 4 
+  || navigator.deviceMemory <= 4
+
+On low-end devices:
+- Reduce particle count in any particle system 
+  by 50 percent
+- Disable WebGL anti-aliasing
+- Reduce animation duration by 30 percent
+- Skip the cursor effect entirely
+- Use simpler shader programs
+
+Add touch-action: manipulation to all buttons 
+and interactive elements to remove the 300ms 
+tap delay on mobile.
+
+---
+
+## 14. FINAL VERIFICATION
+
+After all optimizations run these checks:
+
+Run npm run build — must complete with zero errors.
+
+Check that no single JavaScript chunk exceeds 
+500kb after gzip compression.
+
+Verify that the hero section renders within 
+2.5 seconds on a simulated 4G connection.
+
+Verify that all 6 diagnosis result cards still 
+animate in correctly after Framer Motion changes.
+
+Verify that the cursor splash effect still works 
+exactly as before.
+
+
+
+Verify that page transitions still look identical 
+to before optimization.
+
+Run Lighthouse in Chrome DevTools on the built 
+app served via npx serve dist and confirm:
+- Performance score 85 or above
+- LCP under 2.5 seconds
+- CLS under 0.1
+- TBT under 300ms
+
+Report every change made and the before and after 
+impact on performance for each optimization applied.

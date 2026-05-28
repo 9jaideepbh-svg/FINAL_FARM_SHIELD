@@ -45,16 +45,32 @@ interface AnimateOpts {
   ease?: (t: number) => number; onUpdate: (v: number) => void; onEnd?: () => void;
 }
 
-function animateValue({ start = 0, end = 100, duration = 1000, delay = 0, ease = easeOutCubic, onUpdate, onEnd }: AnimateOpts) {
+function animateValue({ start = 0, end = 100, duration = 1000, delay = 0, ease = easeOutCubic, onUpdate, onEnd }: AnimateOpts): () => void {
   const t0 = performance.now() + delay;
+  let rafId: number;
+  let timeoutId: ReturnType<typeof setTimeout>;
+  let cancelled = false;
+
   function tick() {
+    if (cancelled) return;
     const elapsed = performance.now() - t0;
-    const t = Math.min(elapsed / duration, 1);
+    const t = Math.min(Math.max(elapsed / duration, 0), 1);
     onUpdate(start + (end - start) * ease(t));
-    if (t < 1) requestAnimationFrame(tick);
-    else if (onEnd) onEnd();
+    if (t < 1) {
+      rafId = requestAnimationFrame(tick);
+    } else if (onEnd) {
+      onEnd();
+    }
   }
-  setTimeout(() => requestAnimationFrame(tick), delay);
+  timeoutId = setTimeout(() => {
+    rafId = requestAnimationFrame(tick);
+  }, delay);
+
+  return () => {
+    cancelled = true;
+    clearTimeout(timeoutId);
+    if (rafId) cancelAnimationFrame(rafId);
+  };
 }
 
 const GRADIENT_POSITIONS = ['80% 55%', '69% 34%', '8% 6%', '41% 38%', '86% 85%', '82% 18%', '51% 4%'];
@@ -134,17 +150,24 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
     setSweepActive(true);
     setCursorAngle(angleStart);
 
-    animateValue({ duration: 500, onUpdate: v => setEdgeProximity(v / 100) });
-    animateValue({ ease: easeInCubic, duration: 1500, end: 50, onUpdate: v => {
+    const cancel1 = animateValue({ duration: 500, onUpdate: v => setEdgeProximity(v / 100) });
+    const cancel2 = animateValue({ ease: easeInCubic, duration: 1500, end: 50, onUpdate: v => {
       setCursorAngle((angleEnd - angleStart) * (v / 100) + angleStart);
     }});
-    animateValue({ ease: easeOutCubic, delay: 1500, duration: 2250, start: 50, end: 100, onUpdate: v => {
+    const cancel3 = animateValue({ ease: easeOutCubic, delay: 1500, duration: 2250, start: 50, end: 100, onUpdate: v => {
       setCursorAngle((angleEnd - angleStart) * (v / 100) + angleStart);
     }});
-    animateValue({ ease: easeInCubic, delay: 2500, duration: 1500, start: 100, end: 0,
+    const cancel4 = animateValue({ ease: easeInCubic, delay: 2500, duration: 1500, start: 100, end: 0,
       onUpdate: v => setEdgeProximity(v / 100),
       onEnd: () => setSweepActive(false),
     });
+
+    return () => {
+      cancel1();
+      cancel2();
+      cancel3();
+      cancel4();
+    };
   }, [animated]);
 
   const colorSensitivity = edgeSensitivity + 20;

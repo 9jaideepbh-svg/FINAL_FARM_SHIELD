@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Validate string fields — prevent injection attacks
+    function isValidString(value, maxLength) {
+      return value is string 
+        && value.size() <= maxLength
+        && value.size() > 0;
+    }
+
+    // Validate that incoming data has no extra fields
+    function hasOnlyAllowedFields(data, allowedFields) {
+      return data.keys().hasOnly(allowedFields);
+    }
+
+    // ── plant_diagnosis_history collection ────────────
+    match /plant_diagnosis_history/{diagnosisId} {
+      // Allow read/write for all users since client uses Clerk auth rather than Firebase Auth
+      allow read: if true;
+
+      allow create: if request.resource.data.userId is string
+        && hasOnlyAllowedFields(request.resource.data, [
+          'userId', 'imageUrl', 'plantName', 'scientificName', 'diseaseName', 
+          'isHealthy', 'severity', 'overallConfidence', 'groqSummary', 
+          'groqResponse', 'treatmentSummary', 'fertilizerCount', 'timestamp', 'createdAt'
+        ])
+        && isValidString(request.resource.data.userId, 128)
+        && isValidString(request.resource.data.plantName, 200)
+        && request.resource.data.overallConfidence is number
+        && request.resource.data.overallConfidence >= 0
+        && request.resource.data.overallConfidence <= 100
+        // Optional/flexible fields
+        && (!('diseaseName' in request.resource.data) || isValidString(request.resource.data.diseaseName, 200))
+        && (!('imageUrl' in request.resource.data) || isValidString(request.resource.data.imageUrl, 2000));
+
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // ── users collection ─────────────────────────────
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // ── workers collection ───────────────────────────
+    match /workers/{workerId} {
+      allow read, write: if true;
+    }
+  }
+}

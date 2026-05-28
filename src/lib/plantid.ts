@@ -5,7 +5,10 @@
  * Returns: disease name, confidence, severity, treatments, fertilizer recs
  */
 
-const PLANTID_API_KEY = import.meta.env.VITE_PLANTID_API_KEY as string;
+// NOTE: Plant.id identification is handled server-side in the plant-diagnosis Supabase Edge Function.
+// The PLANTID_API_KEY must NOT be set here — it lives only in Supabase secret storage.
+const PLANTID_API_KEY = ""; // intentionally empty — see supabase/functions/plant-diagnosis/index.ts
+
 const PLANTID_ENDPOINT = "https://plant.id/api/v3/health_assessment";
 
 export interface PlantIdDisease {

@@ -15,7 +15,7 @@ import { collection, getDocs } from "firebase/firestore";
 export default function FarmerFlow() {
   const [searchParams] = useSearchParams();
   const defaultLang = (searchParams.get("lang") as Language) || "en";
-  const [lang] = useState<Language>(defaultLang);
+  const [lang, setLang] = useState<Language>(defaultLang);
   const t = useTranslation(lang);
 
   const [locationState, setLocationState] = useState<"pending" | "granted" | "denied">("pending");
@@ -118,8 +118,21 @@ export default function FarmerFlow() {
   if (locationState === "pending" || locationState === "denied") {
     return (
       <Layout>
-        <div className="container min-h-[80vh] flex flex-col items-center justify-center p-4">
-          <div className="max-w-md w-full bg-card p-8 rounded-2xl shadow-xl border text-center space-y-6">
+        <div className="container min-h-[80vh] flex flex-col p-4 relative">
+          <div className="absolute top-4 right-4 z-10">
+            <Select value={lang} onValueChange={(val: Language) => setLang(val)}>
+              <SelectTrigger className="w-[120px] bg-background">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="hi">हिन्दी</SelectItem>
+                <SelectItem value="kn">ಕನ್ನಡ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="max-w-md w-full bg-card p-8 rounded-2xl shadow-xl border text-center space-y-6">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <MapPin className="h-10 w-10 text-primary" />
             </div>
@@ -154,6 +167,7 @@ export default function FarmerFlow() {
             </Button>
           </div>
         </div>
+        </div>
       </Layout>
     );
   }
@@ -167,6 +181,18 @@ export default function FarmerFlow() {
             <p className="text-muted-foreground flex items-center gap-2">
               <MapPin className="h-4 w-4" /> Showing workers near you
             </p>
+          </div>
+          <div>
+            <Select value={lang} onValueChange={(val: Language) => setLang(val)}>
+              <SelectTrigger className="w-[120px] bg-background">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="hi">हिन्दी</SelectItem>
+                <SelectItem value="kn">ಕನ್ನಡ</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

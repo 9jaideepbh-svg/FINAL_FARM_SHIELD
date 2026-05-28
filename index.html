@@ -6,7 +6,8 @@
     <title>Farm Shield – AI Plant Disease Diagnosis for Farmers</title>
     <meta name="description" content="Farm Shield: AI-powered plant disease diagnosis, crop price forecasting, weather insights, and Krishi Setu labor marketplace for Indian farmers.">
     <meta name="author" content="Farm Shield">
-    <meta name="theme-color" content="#2d6a4f">
+    <meta name="theme-color" content="#16a34a">
+    <meta name="mobile-web-app-capable" content="yes">
 
     <!-- SEO: Open Graph -->
     <meta property="og:type" content="website" />
@@ -24,8 +25,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
+    <!-- Performance: Preload Critical Video and Poster -->
+    <link rel="preload" as="image" href="/images/hero-bg.png" fetchpriority="high">
+    <link rel="preload" as="video" href="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260329_050842_be71947f-f16e-4a14-810c-06e83d23ddb5.mp4" fetchpriority="high">
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+
+    <!-- Critical CSS for Hero -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0b130e;
+        color: white;
+      }
+      #root {
+        min-height: 100vh;
+      }
+    </style>
   </head>
 
   <body>

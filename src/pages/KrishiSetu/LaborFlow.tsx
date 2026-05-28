@@ -135,10 +135,22 @@ export default function LaborFlow() {
 
   return (
     <Layout>
-      <div className="container max-w-2xl py-8 min-h-[80vh]">
+      <div className="container max-w-2xl py-8 min-h-[80vh] relative">
+        <div className="absolute top-4 right-4 z-10">
+          <Select value={lang} onValueChange={(val: Language) => { setLang(val); }}>
+            <SelectTrigger className="w-[120px] bg-background">
+              <SelectValue placeholder="Language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="hi">हिन्दी</SelectItem>
+              <SelectItem value="kn">ಕನ್ನಡ</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         
-        {step !== "location" && step !== "lang" && (
-          <Button variant="ghost" className="mb-4 -ml-4 text-muted-foreground" onClick={() => step === 'form' ? navigate('/krishi-setu') : setStep('form')}>
+        {step !== "location" && (
+          <Button variant="ghost" className="mb-4 -ml-4 text-muted-foreground mt-8" onClick={() => step === 'form' ? navigate('/krishi-setu') : setStep('form')}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
         )}
@@ -189,16 +201,6 @@ export default function LaborFlow() {
           <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-xl border shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-primary">{t("laborRole")}</h2>
-              <Select value={lang} onValueChange={(val: Language) => setLang(val)}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="hi">हिन्दी</SelectItem>
-                  <SelectItem value="kn">ಕನ್ನಡ</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-4">

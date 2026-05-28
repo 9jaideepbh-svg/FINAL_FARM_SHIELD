@@ -13,7 +13,7 @@ import { analyzeSoilWithAI, FetchStatus } from "@/lib/soil-intelligence";
 import { useToast } from "@/hooks/use-toast";
 import { INDIA_STATES_AND_DISTRICTS } from "@/lib/india-states";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
+import { m, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -157,15 +157,15 @@ export default function SoilIntelligence() {
   if (loading) {
     return (
       <Layout>
-        <motion.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+        <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
         <div className="container py-24 flex flex-col items-center justify-center min-h-[75vh] max-w-md mx-auto text-center relative z-10">
-          <motion.div 
+          <m.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
             className="relative mb-8"
           >
-            <motion.div 
+            <m.div 
               animate={{ 
                 scale: [1, 1.2, 1],
                 opacity: [0.5, 0.8, 0.5]
@@ -176,25 +176,25 @@ export default function SoilIntelligence() {
             <div className="h-24 w-24 rounded-full border border-primary/20 bg-background/50 backdrop-blur-xl flex items-center justify-center relative z-10 shadow-[0_0_40px_rgba(var(--primary),0.2)]">
               <FlaskConical className="h-10 w-10 text-primary" />
             </div>
-          </motion.div>
-          <motion.h2 
+          </m.div>
+          <m.h2 
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
             className="text-3xl font-bold mb-2 tracking-tight"
           >
             Soil Intelligence
-          </motion.h2>
-          <motion.p 
+          </m.h2>
+          <m.p 
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
             className="text-primary font-medium text-sm mb-8 tracking-wide uppercase"
           >
             {loadingStep}
-          </motion.p>
+          </m.p>
 
-          <motion.div
+          <m.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
@@ -242,7 +242,7 @@ export default function SoilIntelligence() {
                 ))}
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
         </div>
       </Layout>
     );
@@ -251,9 +251,9 @@ export default function SoilIntelligence() {
   if (showFallback && !result) {
     return (
       <Layout>
-        <motion.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+        <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
         <div className="container py-20 max-w-lg relative z-10">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
@@ -261,12 +261,12 @@ export default function SoilIntelligence() {
             <Card className="border-border/50 shadow-2xl shadow-primary/5 bg-background/60 backdrop-blur-2xl rounded-[2rem] overflow-hidden">
               <div className="h-1 w-full bg-gradient-to-r from-primary via-blue-500 to-emerald-500" />
               <CardHeader className="text-center pb-6 pt-10">
-                <motion.div 
+                <m.div 
                   whileHover={{ scale: 1.05 }}
                   className="mx-auto bg-gradient-to-br from-primary/20 to-primary/5 w-20 h-20 flex items-center justify-center rounded-2xl rotate-3 mb-6 shadow-inner border border-primary/20"
                 >
                   <MapPin className="h-10 w-10 text-primary -rotate-3" />
-                </motion.div>
+                </m.div>
                 <CardTitle className="text-3xl font-bold tracking-tight">Soil Intelligence</CardTitle>
                 <CardDescription className="text-base mt-2">
                   Initialize location link to fetch real-time orbital agricultural data.
@@ -331,7 +331,7 @@ export default function SoilIntelligence() {
                 </form>
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
         </div>
       </Layout>
     );
@@ -341,9 +341,9 @@ export default function SoilIntelligence() {
 
   return (
     <Layout>
-      <motion.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+      <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
       <div className="container py-10 md:py-16 max-w-7xl relative z-10">
-        <motion.div 
+        <m.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6"
@@ -369,9 +369,9 @@ export default function SoilIntelligence() {
             <MapPin className="mr-2 h-4 w-4" />
             Scan New Sector
           </Button>
-        </motion.div>
+        </m.div>
 
-        <motion.div 
+        <m.div 
           variants={containerVariants}
           initial="hidden"
           animate="show"
@@ -379,7 +379,7 @@ export default function SoilIntelligence() {
         >
           
           {/* Card 1: Location & Soil Type */}
-          <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
+          <m.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
             <Card className="h-full border-border/50 bg-background/60 backdrop-blur-2xl shadow-xl shadow-green-900/5 rounded-[2rem] overflow-hidden relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-500/20 rounded-full blur-[40px] group-hover:bg-green-500/30 transition-colors duration-500" />
@@ -420,10 +420,10 @@ export default function SoilIntelligence() {
                 </Badge>
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
 
           {/* Card 2: Soil Health Score */}
-          <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
+          <m.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
             <Card className="h-full border-border/50 bg-background/60 backdrop-blur-2xl shadow-xl shadow-blue-900/5 rounded-[2rem] overflow-hidden relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-[40px] group-hover:bg-blue-500/30 transition-colors duration-500" />
@@ -471,17 +471,17 @@ export default function SoilIntelligence() {
                     <span>Clay {result.healthScore.clayRatio}%</span>
                   </div>
                   <div className="w-full flex h-3 rounded-full overflow-hidden bg-background/50 ring-1 ring-border/50">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${result.healthScore.sandRatio}%` }} transition={{ duration: 1, delay: 0.5 }} className="bg-yellow-400" />
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${result.healthScore.clayRatio}%` }} transition={{ duration: 1, delay: 0.5 }} className="bg-orange-700" />
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${100 - result.healthScore.sandRatio - result.healthScore.clayRatio}%` }} transition={{ duration: 1, delay: 0.5 }} className="bg-stone-500" />
+                    <m.div initial={{ width: 0 }} animate={{ width: `${result.healthScore.sandRatio}%` }} transition={{ duration: 1, delay: 0.5 }} className="bg-yellow-400" />
+                    <m.div initial={{ width: 0 }} animate={{ width: `${result.healthScore.clayRatio}%` }} transition={{ duration: 1, delay: 0.5 }} className="bg-orange-700" />
+                    <m.div initial={{ width: 0 }} animate={{ width: `${100 - result.healthScore.sandRatio - result.healthScore.clayRatio}%` }} transition={{ duration: 1, delay: 0.5 }} className="bg-stone-500" />
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
 
           {/* Card 3: Best Crops */}
-          <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
+          <m.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
             <Card className="h-full border-border/50 bg-background/60 backdrop-blur-2xl shadow-xl shadow-orange-900/5 rounded-[2rem] overflow-hidden relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-orange-500/20 rounded-full blur-[40px] group-hover:bg-orange-500/30 transition-colors duration-500" />
@@ -496,7 +496,7 @@ export default function SoilIntelligence() {
               </CardHeader>
               <CardContent className="space-y-3 pt-4 relative z-10">
                 {result.bestCrops.map((crop: any, idx: number) => (
-                  <motion.div 
+                  <m.div 
                     key={idx} 
                     whileHover={{ scale: 1.02 }}
                     className={`flex items-center justify-between p-3.5 rounded-2xl transition-all ${crop.isBestMatch ? 'bg-orange-500/10 border border-orange-500/20 ring-1 ring-orange-500/10 shadow-sm' : 'bg-white/5 border border-white/10'}`}
@@ -513,14 +513,14 @@ export default function SoilIntelligence() {
                     <Badge variant={crop.isBestMatch ? "default" : "secondary"} className={`rounded-lg ${crop.isBestMatch ? 'bg-orange-500 hover:bg-orange-600' : ''}`}>
                       {crop.expectedYield}
                     </Badge>
-                  </motion.div>
+                  </m.div>
                 ))}
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
 
           {/* Card 4: Weather & Rain */}
-          <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
+          <m.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
             <Card className="h-full border-border/50 bg-background/60 backdrop-blur-2xl shadow-xl shadow-purple-900/5 rounded-[2rem] overflow-hidden relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/20 rounded-full blur-[40px] group-hover:bg-purple-500/30 transition-colors duration-500" />
@@ -566,7 +566,7 @@ export default function SoilIntelligence() {
                       return (
                         <div key={i} className="flex flex-col items-center flex-1 group/bar">
                           <div className="w-full relative flex justify-center items-end h-full">
-                            <motion.div 
+                            <m.div 
                               initial={{ height: 0 }}
                               animate={{ height: `${height}%` }}
                               transition={{ duration: 0.8, delay: 0.5 + (i * 0.1) }}
@@ -576,7 +576,7 @@ export default function SoilIntelligence() {
                               <div className="opacity-0 group-hover/bar:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] px-2 py-0.5 rounded shadow-xl whitespace-nowrap z-20 pointer-events-none transition-opacity">
                                 {day.rainMm}mm
                               </div>
-                            </motion.div>
+                            </m.div>
                           </div>
                           <span className="text-[10px] mt-2 text-muted-foreground font-medium">{day.day}</span>
                         </div>
@@ -586,10 +586,10 @@ export default function SoilIntelligence() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
 
           {/* Card 5: Fertilizer Plan */}
-          <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full md:col-span-2 lg:col-span-1">
+          <m.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full md:col-span-2 lg:col-span-1">
             <Card className="h-full border-border/50 bg-background/60 backdrop-blur-2xl shadow-xl shadow-teal-900/5 rounded-[2rem] overflow-hidden relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-500/20 rounded-full blur-[40px] group-hover:bg-teal-500/30 transition-colors duration-500" />
@@ -636,10 +636,10 @@ export default function SoilIntelligence() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
 
           {/* Card 6: Improvement Tips */}
-          <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full md:col-span-full lg:col-span-1">
+          <m.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full md:col-span-full lg:col-span-1">
             <Card className="h-full border-border/50 bg-background/60 backdrop-blur-2xl shadow-xl shadow-emerald-900/5 rounded-[2rem] overflow-hidden relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/20 rounded-full blur-[40px] group-hover:bg-emerald-500/30 transition-colors duration-500" />
@@ -655,7 +655,7 @@ export default function SoilIntelligence() {
               <CardContent className="space-y-5 pt-4 relative z-10 flex flex-col h-[calc(100%-4rem)] justify-between">
                 <div>
                   {result.improvementTips.warnings && result.improvementTips.warnings.length > 0 && (
-                    <motion.div 
+                    <m.div 
                       initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                       className="bg-red-500/10 text-red-600 dark:text-red-400 p-4 rounded-2xl border border-red-500/20 text-sm mb-5 shadow-sm"
                     >
@@ -667,7 +667,7 @@ export default function SoilIntelligence() {
                           <li key={i}>{w}</li>
                         ))}
                       </ul>
-                    </motion.div>
+                    </m.div>
                   )}
 
                   <ul className="space-y-4">
@@ -686,9 +686,9 @@ export default function SoilIntelligence() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </m.div>
 
-        </motion.div>
+        </m.div>
       </div>
     </Layout>
   );

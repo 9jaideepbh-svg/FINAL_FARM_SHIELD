@@ -1,0 +1,242 @@
+You are a senior full-stack web developer doing a 
+complete final security audit, code cleanup, and 
+production readiness check for Farm Shield — an AI 
+agriculture web app before its hackathon submission.
+
+Tech stack: React + Vite frontend, Clerk authentication, 
+Firebase Firestore database, Supabase Edge Functions 
+as backend for PlantNet, Plant.id and Groq API calls, 
+Cloudinary for image storage, Tomorrow.io for weather.
+
+Do a complete review and fix everything listed below:
+
+---
+
+## 1. API KEY SECURITY AUDIT
+
+Check every single file in the project for exposed 
+API keys. Apply this rule strictly:
+
+Keys that MUST be in frontend .env with VITE_ prefix:
+- Clerk publishable key (safe to expose)
+- Firebase config values (safe to expose)
+- Cloudinary cloud name and upload preset (safe)
+- Tomorrow.io API key (move to backend if possible)
+
+Keys that must NEVER be in frontend .env:
+- PlantNet API key (must only be in Supabase secrets)
+- Plant.id API key (must only be in Supabase secrets)
+- Groq API key (must only be in Supabase secrets)
+
+If any of these secret keys are found anywhere in 
+the frontend code or .env file remove them immediately.
+
+Also check the .env.example or any committed config 
+files for accidentally exposed real key values.
+
+Add .env to .gitignore if it is not already there.
+Add a comment at the top of .env saying:
+"Never commit this file to GitHub"
+
+---
+
+## 2. FILE UPLOAD SECURITY
+
+The diagnosis page allows users to upload images.
+Add these strict upload validations:
+
+
+
+Block everything else including:
+- .zip files
+- .exe files
+- .pdf files
+- .js files
+- .html files
+- Any file that is not a valid image
+
+Validate file type in TWO places:
+First on the frontend before upload starts and 
+second check the file magic bytes not just the 
+extension because attackers can rename .exe to .jpg
+
+Maximum file size must be 10MB. Reject anything larger.
+
+
+
+---
+
+## 3. AUTHENTICATION SECURITY
+
+Using Clerk for authentication. Check these:
+
+Every protected route must redirect to login if 
+user is not authenticated. Check all these routes:
+- /diagnosis
+- /history
+- /soil-intelligence
+- /crop-simulator
+- /voice
+
+Make sure no diagnosis data from one user can ever 
+appear for another user.
+
+In every Firestore query that fetches user data 
+make sure the userId filter is always applied.
+Never fetch all documents from plant_diagnosis_history 
+without filtering by the logged in user's ID.
+
+---
+
+## 4. FIRESTORE SECURITY RULES CHECK
+
+Verify that the Firestore security rules are 
+correctly deployed and active. The rules should:
+- Only allow users to read their own documents
+- Only allow users to write with their own userId
+- Block all unauthenticated access
+- Block access to all unlisted collections
+
+Test the rules by checking if the app works 
+correctly after rules are applied.
+
+---
+
+## 5. SUPABASE EDGE FUNCTION SECURITY
+
+Check the plant-diagnosis edge function for:
+
+Make sure API keys are being read from 
+Deno.env.get() and not hardcoded anywhere 
+in the function code.
+
+Add input validation inside the edge function:
+- Check that imageBase64 is not empty
+- Check that imageBase64 length is not more 
+  than 10MB worth of base64 characters
+- Reject requests that do not have valid base64 
+  image data
+- Add rate limiting awareness in error messages
+
+Make sure the CORS headers only allow your 
+specific domain and not wildcard * in production.
+For development keep * but add a comment saying 
+this must be changed before production deployment.
+
+---
+
+## 6. CODE CLEANUP — REMOVE DEAD CODE
+
+Search the entire project for these and remove them:
+
+Remove all console.log statements that were added 
+for debugging. Keep only console.error for actual 
+error handling.
+
+Remove all commented out code blocks that are no 
+longer needed.
+
+Remove any import statements for packages that are 
+no longer used anywhere in the project.
+
+Remove any duplicate component files. Check if 
+there are two versions of the same component and 
+keep only the latest working one.
+
+Check for these specific dead files that may exist 
+from the old Supabase pipeline that was replaced:
+- Any old diagnosis service files that called 
+  PlantNet or Plant.id directly from frontend
+- Any old SimplifiedResult component that was 
+  replaced by DiagnosisResultCards
+- Any leftover Supabase client setup if Supabase 
+  is only being used for edge functions now
+
+---
+
+## 7. CHROME WEBDEVTOOLS-
+MCP SERVER OF CHROME WEBDEVTOOLS IS CONNECTED,MAKE SURE YOU USE IT AND GO TO NETWORK SEARCH FOR ANY API KEYS THT SHOULD NOT BE EXPOSED,WORK LIKE A HACKER AND SEE NO ONE CAN SEARCH AND TAKE MY API KEYS,ITS BETTER TO USE SIPABASE EDGE FUNCTION FOR MOST OF THEM
+
+
+
+Variables that must NOT be in .env:
+PLANTNET_API_KEY — must only be in Supabase secrets
+PLANTID_API_KEY — must only be in Supabase secrets
+groq keyy- must only be in Supabase secrets
+
+
+---
+
+## 8. DEPENDENCY SECURITY CHECK
+
+Run npm audit and fix any high or critical 
+severity vulnerabilities found.
+
+Check package.json for any packages that are 
+installed but never imported anywhere in the code 
+and remove them.
+
+Make sure all packages are using recent stable 
+versions without known security issues.
+
+---
+
+## 9. ERROR HANDLING AUDIT
+
+Check every API call in the project and make sure:
+
+No raw error objects are ever shown to the user.
+Error messages shown to users must be friendly 
+and not reveal internal system details like 
+API endpoints, key names or stack traces.
+
+Every async function must have try-catch wrapping.
+
+If Supabase edge function fails the app should 
+show a retry button and not crash completely.
+
+If Cloudinary upload fails the diagnosis should 
+stop and show a clear message before trying to 
+call the edge function.
+
+---
+
+## 10. PERFORMANCE AND BUILD CHECK
+
+Run npm run build and make sure it completes 
+without any TypeScript errors or warnings.
+
+Check that bundle size is reasonable. If any 
+single chunk is above 500kb flag it and suggest 
+code splitting with React.lazy for that page.
+
+Make sure all images in the public folder are 
+optimized and not unnecessarily large.
+
+Check that there are no circular dependency 
+warnings in the build output.
+
+---
+
+## 11. FINAL PRODUCTION CHECKLIST
+
+After all fixes verify:
+
+The app builds successfully with npm run build
+No TypeScript errors exist anywhere
+No console.log statements remain in production code
+No API keys are exposed in frontend bundle
+All routes are properly protected with Clerk auth
+Firestore rules are active and tested
+Supabase edge function has no hardcoded secrets
+File upload only accepts valid image formats
+All 6 diagnosis cards render correctly
+History page shows only the logged in user's data
+PDF download works correctly
+Voice feature works with correct language detection
+Crop simulator returns correct data
+Soil intelligence page loads without errors
+Weather page works with Tomorrow.io API
+
+Report a summary of everything that was fixed 
+and anything that still needs manual attention.

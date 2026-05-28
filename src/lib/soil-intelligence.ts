@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface FetchStatus {
   apiName: string;
@@ -28,10 +28,6 @@ export const analyzeSoilWithAI = async (
   locationName: string,
   onStatusChange?: (statuses: Record<string, FetchStatus>) => void
 ): Promise<any> => {
-  const GROQ_KEY = import.meta.env.VITE_GROQ_KEY;
-
-  if (!GROQ_KEY) throw new Error("Groq API key is missing from environment variables.");
-
   const statuses: Record<string, FetchStatus> = {
     openMeteoSoil: { apiName: "OpenMeteo Soil Data", status: 'pending' },
     openMeteoWeather: { apiName: "OpenMeteo Weather Data", status: 'pending' },
@@ -56,7 +52,6 @@ export const analyzeSoilWithAI = async (
     openMeteoSoilData = await res.json();
     updateStatus('openMeteoSoil', 'success');
   } catch (e: any) {
-    console.error("OpenMeteo Soil fetch failed:", e);
     updateStatus('openMeteoSoil', e.message === 'timeout' ? 'timeout' : 'failed');
   }
 
@@ -67,7 +62,6 @@ export const analyzeSoilWithAI = async (
     openMeteoWeatherData = await res.json();
     updateStatus('openMeteoWeather', 'success');
   } catch (e: any) {
-    console.error("OpenMeteo Weather fetch failed:", e);
     updateStatus('openMeteoWeather', e.message === 'timeout' ? 'timeout' : 'failed');
   }
 
@@ -111,100 +105,19 @@ export const analyzeSoilWithAI = async (
     })) || null;
   }
 
-  // 3. Send to Groq for AI Synthesis
+  // 3. Send to Supabase edge function (groq-soil) — keeps GROQ_API_KEY server-side
   try {
     updateStatus('groqAI', 'pending');
-    
-    const prompt = `
-You are an expert Indian soil scientist and agricultural advisor. Based on the following sanitized sensor and forecast data for an agricultural region in India (${locationName}), generate a complete, structured soil analysis report.
 
-RAW SATELLITE & SENSOR DATA:
-Location: ${locationName} (Latitude: ${lat}, Longitude: ${lon})
-
-1. OpenMeteo Soil Sensor Readings (Current & 7-Day Averages/Ranges):
-${cleanSoilData ? JSON.stringify(cleanSoilData) : "UNAVAILABLE (Using regional soil knowledge fallback)"}
-(Note: Cleaned fields describe surfaceTemp (0cm), deepTemp (6cm) and moisture at depths 0_1cm, 1_3cm, 3_9cm)
-
-2. OpenMeteo Daily Weather Forecast (Next 7 Days):
-${cleanMeteoWeatherData ? JSON.stringify(cleanMeteoWeatherData) : "UNAVAILABLE"}
-
-CRITICAL AGRICULTURAL DIRECTIVE:
-If any of the OpenMeteo sensor datasets are "UNAVAILABLE" due to sensor timeout or service failure, use your deep regional knowledge of Indian geography, agro-climatic zones, and soil science to estimate scientifically accurate historical soil conditions, soil type classification, pH level, clay/sand ratios, and agricultural recommendations specifically for ${locationName}. Llama-3 possesses advanced training data regarding the soil taxonomy and farming dynamics of every major district in India.
-
-Based on this, return ONLY a valid JSON object matching this EXACT structure. Do not include markdown formatting or extra text.
-
-{
-  "locationAndType": {
-    "locationName": "${locationName}",
-    "soilClassification": "String (e.g., Alfisol, Vertisol, Inceptisol)",
-    "soilTexture": "String (e.g., Clayey Sand, Clay Loam, Red Loamy)",
-    "colorIndicator": "hex code representing typical regional soil color (e.g., #8c3f2b for red laterite, #3a2e2b for black cotton)"
-  },
-  "healthScore": {
-    "score": number (0-100 based on physical parameters, moisture suitability, and crop viability),
-    "phLevel": number (between 4.5 and 8.5),
-    "nitrogenStatus": "Deficient" | "Adequate" | "Rich",
-    "organicCarbonPercent": number (estimated organically, e.g. 0.65),
-    "clayRatio": number (0-100),
-    "sandRatio": number (0-100)
-  },
-  "bestCrops": [
-    { "name": "String", "expectedYield": "String (e.g., 18-22 Quintals/Acre)", "season": "Kharif" | "Rabi" | "Zaid", "icon": "TreePine" | "Leaf" | "Sprout", "isBestMatch": boolean }
-  ],
-  "weatherForecast": {
-    "soilMoistureTrend": "Increasing" | "Stable" | "Decreasing",
-    "bestDaysToPlant": "String (e.g., Next Wednesday or Tomorrow)",
-    "rainRiskWarnings": "String (describe any heavy precipitation warning or drought stress warning)",
-    "sevenDayRainfall": [
-      { "day": "Mon", "rainMm": number },
-      { "day": "Tue", "rainMm": number },
-      { "day": "Wed", "rainMm": number },
-      { "day": "Thu", "rainMm": number },
-      { "day": "Fri", "rainMm": number },
-      { "day": "Sat", "rainMm": number },
-      { "day": "Sun", "rainMm": number }
-    ]
-  },
-  "fertilizerPlan": {
-    "recommendedFertilizers": ["String (e.g., Urea, NPK 19-19-19, Single Super Phosphate)"],
-    "npkRatio": "String (e.g., 4:2:1)",
-    "applicationSchedule": "String",
-    "dosagePerAcre": "String"
-  },
-  "improvementTips": {
-    "actionableTips": ["String (practical agricultural improvement practices)"],
-    "recoveryTimeline": "String (e.g., 2-3 Months)",
-    "longTermAdvice": "String",
-    "warnings": ["String (if any specific nutrient or moisture stress exists)"]
-  }
-}
-`;
-
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_KEY}`
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      })
+    const { data, error } = await supabase.functions.invoke('groq-soil', {
+      body: { lat, lon, locationName, cleanSoilData, cleanMeteoWeatherData }
     });
 
-    if (!groqRes.ok) {
-      throw new Error("Failed to get analysis from Groq");
-    }
+    if (error) throw new Error(error.message || 'groq-soil edge function failed');
 
-    const groqData = await groqRes.json();
-    const result = JSON.parse(groqData.choices[0].message.content);
     updateStatus('groqAI', 'success');
-    return result;
-
+    return data;
   } catch (error: any) {
-    console.error("Groq AI compilation failed:", error);
     updateStatus('groqAI', 'failed');
     throw error;
   }

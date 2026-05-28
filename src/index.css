@@ -1,4 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&family=Oswald:wght@200;300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fustat:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:ital,wght@0,400..700;1,400..700&display=swap');
+
+@font-face {
+    font-family: "Helvetica Regular";
+    src: url("https://db.onlinewebfonts.com/t/a64ff11d2c24584c767f6257e880dc65.eot");
+    src: url("https://db.onlinewebfonts.com/t/a64ff11d2c24584c767f6257e880dc65.eot?#iefix")format("embedded-opentype"),
+    url("https://db.onlinewebfonts.com/t/a64ff11d2c24584c767f6257e880dc65.woff2")format("woff2"),
+    url("https://db.onlinewebfonts.com/t/a64ff11d2c24584c767f6257e880dc65.woff")format("woff"),
+    url("https://db.onlinewebfonts.com/t/a64ff11d2c24584c767f6257e880dc65.ttf")format("truetype"),
+    url("https://db.onlinewebfonts.com/t/a64ff11d2c24584c767f6257e880dc65.svg#Helvetica Regular")format("svg");
+}
 
 @tailwind base;
 @tailwind components;
@@ -8,6 +19,7 @@
 
 @layer base {
   :root {
+    --font-sans: "Helvetica Regular", "Inter", sans-serif;
     /* Forest Green - Primary (healthy crops) */
     --primary: 120 61% 34%;
     --primary-foreground: 0 0% 100%;
@@ -113,6 +125,7 @@
     --sidebar-accent-foreground: 60 20% 95%;
     --sidebar-border: 120 10% 20%;
     --sidebar-ring: 120 50% 45%;
+    --font-sans: "Helvetica Regular", "Inter", sans-serif;
   }
 }
 
@@ -129,6 +142,10 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif;
     @apply font-semibold tracking-tight;
+  }
+
+  button, a {
+    touch-action: manipulation;
   }
 }
 
@@ -149,9 +166,560 @@
     @apply bg-clip-text text-transparent;
     background: var(--gradient-hero);
   }
+
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.01);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .liquid-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(180deg,
+      rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%,
+      rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%,
+      rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Custom font utilities for Tailwind v3 compatibility */
+.font-schibsted {
+  font-family: "Schibsted Grotesk", sans-serif;
+}
+.font-inter {
+  font-family: "Inter", sans-serif;
+}
+.font-noto {
+  font-family: "Noto Sans", sans-serif;
+}
+.font-fustat {
+  font-family: "Fustat", sans-serif;
+}
+
+/* --- Infinite scroller track animations --- */
+@keyframes scrollRightToLeft {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroller-track {
+  display: flex;
+  width: max-content;
+  animation: scrollRightToLeft 25s linear infinite;
+}
+
+.animate-scroller-track:hover {
+  animation-play-state: paused;
+}
+
+.scroller-mask {
+  mask-image: linear-gradient(to right, transparent, white 8%, white 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, white 8%, white 92%, transparent);
+}
+
+.scroller-mask-horizontal {
+  mask-image: linear-gradient(to right, transparent, white 4%, white 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, white 4%, white 96%, transparent);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* --- Fullscreen Cinematic Preloader --- */
+.loader-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loader-panel-left {
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 50.5%;
+  height: 100vh;
+  background-color: #000000;
+  z-index: 1;
+}
+
+.loader-panel-right {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 50.5%;
+  height: 100vh;
+  background-color: #000000;
+  z-index: 1;
+}
+
+.loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 900px;
+  padding: 0 40px;
+}
+
+.progress-container {
+  width: 320px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 60px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #059669, #10b981, #6ee7b7);
+  box-shadow: 0 0 20px #10b981, 0 0 35px rgba(16, 185, 129, 0.6);
+  position: relative;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  animation: barShine 1.4s infinite linear;
+}
+
+@keyframes barShine {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+.text-display-area {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headline {
+  position: absolute;
+  width: 100%;
+  font-weight: 900;
+  font-size: clamp(24px, 4.5vw, 54px);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  text-align: center;
+  user-select: none;
+  font-family: 'Inter', sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.97);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  --gy: 150%; 
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.headline.active {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.headline:hover {
+  filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.15));
+}
+
+#phrase1 {
+  background-image: radial-gradient(
+    circle at 50% var(--gy),
+    oklch(0.92 0.13 140) 0%,
+    oklch(0.72 0.25 160) 45%,
+    oklch(0.35 0.15 180) 80%,
+    oklch(0.15 0.05 200 / 0) 130%
+  );
+}
+
+#phrase2 {
+  background-image: radial-gradient(
+    circle at 50% var(--gy),
+    oklch(0.95 0.12 200) 0%,
+    oklch(0.75 0.25 220) 45%,
+    oklch(0.35 0.18 260) 80%,
+    oklch(0.15 0.05 280 / 0) 130%
+  );
+}
+
+#phrase3 {
+  background-image: radial-gradient(
+    circle at 50% var(--gy),
+    oklch(0.94 0.16 110) 0%,
+    oklch(0.78 0.24 60) 45%,
+    oklch(0.40 0.20 25) 80%,
+    oklch(0.15 0.05 10 / 0) 130%
+  );
+}
+
+#phrase4 {
+  background-image: radial-gradient(
+    circle at 50% var(--gy),
+    oklch(0.93 0.14 320) 0%,
+    oklch(0.70 0.28 340) 45%,
+    oklch(0.35 0.20 295) 80%,
+    oklch(0.15 0.05 280 / 0) 130%
+  );
+}
+
+/* --- Premium Liquid Glass Button --- */
+.liquid-glass-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 200px;
+  padding: 16px 36px;
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 15%, rgba(255, 255, 255, 0.0) 50%, rgba(255, 255, 255, 0.03) 85%, rgba(255, 255, 255, 0.1) 100%), rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 
+    0 1px 3px rgba(255, 255, 255, 0.35) inset,
+    inset 0 -1px 2px rgba(255, 255, 255, 0.12),
+    2px 4px 16px rgba(0, 0, 0, 0.25),
+    -1px -1px 2px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.65);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  overflow: hidden;
+}
+
+.liquid-glass-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
+  transition: all 0.6s ease;
+  z-index: 1;
+}
+
+.liquid-glass-btn:hover::before {
+  left: 100%;
+  transition: all 0.8s ease;
+}
+
+.liquid-glass-btn:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 15%, rgba(255, 255, 255, 0.0) 50%, rgba(255, 255, 255, 0.06) 85%, rgba(255, 255, 255, 0.15) 100%), rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.55);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 2px 5px rgba(255, 255, 255, 0.45) inset,
+    inset 0 -1px 2px rgba(255, 255, 255, 0.15),
+    4px 10px 24px rgba(0, 0, 0, 0.32),
+    -2px -2px 4px rgba(0, 0, 0, 0.15);
+  filter: brightness(110%);
+}
+
+.liquid-glass-btn:active {
+  transform: translateY(0px) scale(0.98);
+  box-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.15) inset,
+    1px 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Premium 3D Tactile Interactive Cards CSS --- */
+:root {
+  --glass-edge: rgba(255, 255, 255, 0.85);
+}
+
+.ux-parent {
+  /* Removed drop-shadow to fix transparent box issue */
+}
+
+.ux-card {
+  position: relative;
+  height: 100%;
+  border-radius: 40px;
+  background: var(--ux-grad);
+  transition:
+    box-shadow 0.55s ease;
+  box-shadow:
+    rgba(5, 71, 17, 0) 40px 50px 25px -40px,
+    rgba(5, 71, 17, 0.28) 0 25px 25px -5px;
+}
+
+
+
+/* Card Themes */
+.ux-parent--mint {
+  --ux-grad: linear-gradient(135deg, #539832 0%, #38761d 100%);
+  --ux-title: #16300c;
+  --ux-body: rgba(22, 48, 12, 0.82);
+  --ux-cta: #38761d;
+  --ux-orbit: rgba(56, 118, 29, 0.15);
+  --ux-fill: #38761d;
+}
+
+.ux-parent--violet {
+  --ux-grad: linear-gradient(145deg, #99c55b 0%, #739c38 100%);
+  --ux-title: #1c3308;
+  --ux-body: rgba(28, 51, 8, 0.85);
+  --ux-cta: #739c38;
+  --ux-orbit: rgba(115, 156, 56, 0.18);
+  --ux-fill: #739c38;
+}
+
+.ux-parent--solar {
+  --ux-grad: linear-gradient(135deg, #32967d 0%, #1f6f5b 100%);
+  --ux-title: #092f25;
+  --ux-body: rgba(9, 47, 37, 0.82);
+  --ux-cta: #1f6f5b;
+  --ux-orbit: rgba(31, 111, 91, 0.15);
+  --ux-fill: #1f6f5b;
+}
+
+.ux-parent--ocean {
+  --ux-grad: linear-gradient(155deg, #22d3ee 0%, #0284c7 50%, #1e3a8a 100%);
+  --ux-title: #0c4a6e;
+  --ux-body: rgba(12, 74, 110, 0.88);
+  --ux-cta: #0369a1;
+  --ux-orbit: rgba(125, 211, 252, 0.28);
+  --ux-fill: #0e7490;
+}
+
+.ux-parent--void {
+  --ux-grad: linear-gradient(135deg, #185a46 0%, #0b3d2e 100%);
+  --ux-title: #e2fbf3;
+  --ux-body: rgba(226, 251, 243, 0.85);
+  --ux-cta: #5eead4;
+  --ux-orbit: rgba(94, 234, 212, 0.15);
+  --ux-fill: #5eead4;
+}
+
+/* Shape variants */
+.ux-parent--cut .ux-card {
+  border-radius: 28px;
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
+}
+
+.ux-parent--cut .ux-glass {
+  border-radius: 24px !important;
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+}
+
+/* Glass Refraction sheet */
+.ux-glass {
+  position: absolute;
+  inset: 8px;
+  border-radius: 36px;
+  border-top-right-radius: 100%;
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.7) 100%);
+  border-inline-start: 1px solid var(--glass-edge);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
+
+.ux-parent--void .ux-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(11, 61, 46, 0.45) 100%);
+  border-color: rgba(94, 234, 212, 0.2);
+}
+
+/* Concentric orbits */
+.ux-logo {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ux-circle {
+  display: block;
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  top: 0;
+  inset-inline-end: 0;
+  background: var(--ux-orbit);
+  box-shadow: rgba(0, 0, 0, 0.15) -10px 10px 24px 0;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.ux-circle:nth-child(1) {
+  width: 140px;
+  top: 8px;
+  inset-inline-end: 8px;
+}
+.ux-circle:nth-child(2) {
+  width: 112px;
+  top: 10px;
+  inset-inline-end: 10px;
+  backdrop-filter: blur(4px);
+}
+.ux-circle:nth-child(3) {
+  width: 88px;
+  top: 14px;
+  inset-inline-end: 14px;
+}
+.ux-circle:nth-child(4) {
+  width: 65px;
+  top: 18px;
+  inset-inline-end: 18px;
+}
+.ux-circle:nth-child(5) {
+  width: 44px;
+  top: 24px;
+  inset-inline-end: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Card content */
+.ux-content {
+  padding: 64px 2.25rem 0 1.5rem;
+  position: relative;
+  z-index: 3;
+}
+
+.ux-title {
+  display: block;
+  color: var(--ux-title);
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+
+.ux-text {
+  display: block;
+  margin-top: 0.75rem;
+  color: var(--ux-body);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.ux-bottom {
+  padding: 10px 14px;
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 4;
+}
+
+.ux-social {
+  display: flex;
+  gap: 8px;
+}
+
+.ux-social-btn {
+  width: 30px;
+  aspect-ratio: 1;
+  padding: 4px;
+  background: #ffffff;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: rgba(0, 0, 0, 0.15) 0 8px 6px -5px;
+  transition:
+    box-shadow 0.2s ease-in-out,
+    background 0.2s;
+}
+
+.ux-social-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ux-parent:hover .ux-social-btn {
+  box-shadow: rgba(0, 0, 0, 0.15) -5px 15px 10px 0;
+}
+
+.ux-more {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.ux-more-btn {
+  background: none;
+  border: none;
+  color: var(--ux-cta);
+  font-weight: 800;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ux-more svg {
+  fill: none;
+  stroke: var(--ux-cta);
+  stroke-width: 3px;
+}

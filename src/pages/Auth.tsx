@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useSignIn, useSignUp, useUser } from "@clerk/clerk-react";
+import { m } from "framer-motion";
+import { Music2, Facebook, Twitter, Youtube, Instagram } from "lucide-react";
 
 /* ─────────────────────────────────────────────
    Types
-───────────────────────────────────────────── */
+   ───────────────────────────────────────────── */
 type Mode = "signin" | "signup";
 type Step = "email" | "password" | "verify" | "name";
 
@@ -24,29 +26,18 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { isSignedIn, isLoaded } = useUser();
   const { signIn, setActive: setActiveSignIn } = useSignIn();
   const { signUp, setActive: setActiveSignUp } = useSignUp();
 
-  // Light ring cursor effect
-  const ringRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!ringRef.current) return;
-      const x = e.clientX / window.innerWidth;
-      const y = e.clientY / window.innerHeight;
-      const mx = (x - 0.5) * 140;
-      const my = (y - 0.5) * 90;
-      ringRef.current.style.transform = `translate(-50%, -50%) translate(${mx}px, ${my}px)`;
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
   // Redirect if already signed in
   useEffect(() => {
-    if (isLoaded && isSignedIn) navigate("/");
-  }, [isLoaded, isSignedIn, navigate]);
+    if (isLoaded && isSignedIn) {
+      const from = (location.state as any)?.from?.pathname || "/";
+      navigate(from, { replace: true });
+    }
+  }, [isLoaded, isSignedIn, navigate, location]);
 
   // Sync URL tab param
   const switchMode = (next: Mode) => {
@@ -63,24 +54,25 @@ export default function Auth() {
   /* ───── Google OAuth ───── */
   const handleGoogle = useCallback(async () => {
     setError("");
+    const targetUrl = (location.state as any)?.from?.pathname || "/";
     try {
       if (mode === "signin") {
         await signIn?.authenticateWithRedirect({
           strategy: "oauth_google",
           redirectUrl: "/sso-callback",
-          redirectUrlComplete: "/",
+          redirectUrlComplete: targetUrl,
         });
       } else {
         await signUp?.authenticateWithRedirect({
           strategy: "oauth_google",
           redirectUrl: "/sso-callback",
-          redirectUrlComplete: "/",
+          redirectUrlComplete: targetUrl,
         });
       }
     } catch (err: any) {
       setError(err?.errors?.[0]?.message ?? "Google sign-in failed.");
     }
-  }, [mode, signIn, signUp]);
+  }, [mode, signIn, signUp, location.state]);
 
   /* ───── Email step ───── */
   const handleEmailContinue = async () => {
@@ -115,7 +107,8 @@ export default function Auth() {
       });
       if (res.status === "complete") {
         await setActiveSignIn!({ session: res.createdSessionId });
-        navigate("/");
+        const from = (location.state as any)?.from?.pathname || "/";
+        navigate(from, { replace: true });
       } else {
         setError("Unexpected error. Please try again.");
       }
@@ -149,7 +142,8 @@ export default function Auth() {
       const res = await signUp!.attemptEmailAddressVerification({ code });
       if (res.status === "complete") {
         await setActiveSignUp!({ session: res.createdSessionId });
-        navigate("/");
+        const from = (location.state as any)?.from?.pathname || "/";
+        navigate(from, { replace: true });
       } else {
         setError("Verification incomplete. Please try again.");
       }
@@ -161,7 +155,7 @@ export default function Auth() {
   };
 
   /* ─────────────────────────────────────────────
-     Step-progress indicator (3 bars, first lit)
+     Step-progress indicator
   ───────────────────────────────────────────── */
   const stepIndex = ["email", "name", "verify", "password"].indexOf(step);
   const totalSteps = mode === "signup" ? 3 : 2;
@@ -170,10 +164,10 @@ export default function Auth() {
      Render helpers
   ───────────────────────────────────────────── */
   const renderTitle = () => {
-    if (mode === "signin") return step === "password" ? "Enter your password" : "Sign in to FARM SHIELD";
+    if (mode === "signin") return step === "password" ? "Enter password" : "Sign in to FARM SHIELD";
     if (step === "name") return "What's your name?";
     if (step === "verify") return "Check your email";
-    return "Create your account";
+    return "Create account";
   };
 
   const renderSubtitle = () => {
@@ -185,502 +179,260 @@ export default function Auth() {
   };
 
   return (
-    <>
-      {/* ── Inject styles (scoped to this page via class prefix) ── */}
-      <style>{`
-        .fs-auth-body {
-          width: 100%;
-          min-height: 100vh;
-          background: #000;
-          font-family: 'Inter', sans-serif;
-          color: white;
-          position: relative;
-          overflow: hidden;
-        }
-        @media(max-width:900px){ .fs-auth-body { overflow: auto; } }
+    <main className="relative w-full min-h-screen overflow-x-hidden flex flex-col justify-between items-center font-sans selection:bg-white/20 selection:text-white">
+      {/* Fixed background planetary video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover z-[0]"
+      >
+        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260429_114316_1c7889ad-2885-410e-b493-98119fee0ddb.mp4" type="video/mp4" />
+      </video>
 
-        .fs-bg {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at center, #06101f 0%, #01040a 42%, #000 100%);
-        }
+      {/* Dark luxury cosmic overlay - fully transparent to let the high-fidelity video remain 100% sharp & visible */}
+      <div className="fixed inset-0 bg-transparent z-[1] pointer-events-none" />
 
-        .fs-ring {
-          position: absolute;
-          width: 1350px;
-          height: 1350px;
-          border-radius: 50%;
-          top: 50%;
-          left: 44%;
-          transform: translate(-50%, -50%);
-          pointer-events: none;
-          transition: transform 0.08s linear;
-          background: radial-gradient(circle,
-            rgba(0,0,0,0) 56%,
-            rgba(199,231,255,0.04) 60%,
-            rgba(207,235,255,0.22) 63%,
-            rgba(255,255,255,0.96) 66%,
-            rgba(193,226,255,0.82) 68%,
-            rgba(123,187,255,0.35) 70%,
-            rgba(0,0,0,0) 74%);
-          filter: blur(16px) drop-shadow(0 0 90px rgba(173,220,255,0.9)) drop-shadow(0 0 160px rgba(95,170,255,0.55));
-          opacity: 0.95;
-        }
-        @media(max-width:900px){ .fs-ring { width:900px; height:900px; left:50%; } }
-
-        .fs-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, rgba(0,0,0,0.08), rgba(0,0,0,0), rgba(0,0,0,0.28));
-          pointer-events: none;
-        }
-
-        .fs-noise {
-          position: absolute;
-          inset: 0;
-          opacity: 0.04;
-          mix-blend-mode: soft-light;
-          background-image: url("https://grainy-gradients.vercel.app/noise.svg");
-        }
-
-        .fs-side-text {
-          position: absolute;
-          right: 18px;
-          top: 50%;
-          transform: translateY(-50%) rotate(90deg);
-          color: #5f6679;
-          font-size: 11px;
-          letter-spacing: 6px;
-          z-index: 5;
-          white-space: nowrap;
-        }
-        @media(max-width:900px){ .fs-side-text { display: none; } }
-
-        .fs-panel {
-          position: absolute;
-          right: 90px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 470px;
-          background: linear-gradient(180deg, rgba(10,13,22,0.72), rgba(5,7,13,0.84));
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 42px;
-          backdrop-filter: blur(28px);
-          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02), 0 0 80px rgba(106,170,255,0.08);
-          padding: 48px;
-          z-index: 10;
-        }
-        @media(max-width:900px){
-          .fs-panel {
-            position: relative;
-            top: auto; right: auto;
-            transform: none;
-            width: 92%;
-            margin: 40px auto;
-          }
-        }
-
-        .fs-steps {
-          display: flex;
-          gap: 14px;
-          margin-bottom: 52px;
-        }
-        .fs-step-bar {
-          flex: 1;
-          height: 3px;
-          border-radius: 999px;
-          background: #161b26;
-          transition: background 0.4s, box-shadow 0.4s;
-        }
-        .fs-step-bar.active {
-          background: white;
-          box-shadow: 0 0 10px white;
-        }
-
-        .fs-title {
-          font-size: 42px;
-          line-height: 1.05;
-          letter-spacing: -2px;
-          margin-bottom: 14px;
-          font-weight: 800;
-        }
-        @media(max-width:500px){ .fs-title { font-size: 32px; } }
-
-        .fs-subtitle {
-          color: #8d95a8;
-          font-size: 15px;
-          line-height: 1.6;
-          margin-bottom: 32px;
-        }
-
-        .fs-google-btn {
-          width: 100%;
-          height: 68px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.06);
-          background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 14px;
-          font-size: 16px;
-          font-weight: 500;
-          position: relative;
-          cursor: pointer;
-          transition: 0.3s;
-          margin-bottom: 28px;
-          font-family: 'Inter', sans-serif;
-        }
-        .fs-google-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 0 24px rgba(255,255,255,0.08);
-        }
-        .fs-google-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .fs-last-used {
-          position: absolute;
-          top: -11px;
-          right: 20px;
-          padding: 4px 10px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.06);
-          font-size: 11px;
-          color: #d3dbeb;
-        }
-
-        .fs-divider {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          color: #8e96a8;
-          font-size: 13px;
-          margin-bottom: 30px;
-        }
-        .fs-divider::before, .fs-divider::after {
-          content: "";
-          flex: 1;
-          height: 1px;
-          background: #242938;
-        }
-
-        .fs-field { margin-bottom: 28px; }
-        .fs-label {
-          display: block;
-          margin-bottom: 12px;
-          font-size: 14px;
-          font-weight: 600;
-          color: #dfe7f6;
-        }
-        .fs-input {
-          width: 100%;
-          height: 68px;
-          border-radius: 20px;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.06);
-          outline: none;
-          padding: 0 24px;
-          color: white;
-          font-size: 16px;
-          transition: 0.3s;
-          font-family: 'Inter', sans-serif;
-        }
-        .fs-input:focus {
-          border: 1px solid rgba(153,201,255,0.45);
-          box-shadow: 0 0 24px rgba(121,181,255,0.12);
-        }
-        .fs-input::placeholder { color: #71798c; }
-
-        .fs-continue-btn {
-          width: 100%;
-          height: 70px;
-          border: none;
-          border-radius: 999px;
-          cursor: pointer;
-          background: linear-gradient(90deg, #5f4eff, #7d5dff, #684dff);
-          color: white;
-          font-size: 18px;
-          font-weight: 700;
-          box-shadow: 0 10px 30px rgba(107,77,255,0.35);
-          transition: 0.3s;
-          font-family: 'Inter', sans-serif;
-        }
-        .fs-continue-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 15px 42px rgba(107,77,255,0.5);
-        }
-        .fs-continue-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .fs-back-btn {
-          background: none;
-          border: none;
-          color: #8d95a8;
-          font-size: 14px;
-          cursor: pointer;
-          margin-bottom: 20px;
-          font-family: 'Inter', sans-serif;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 0;
-          transition: color 0.2s;
-        }
-        .fs-back-btn:hover { color: white; }
-
-        .fs-toggle {
-          margin-top: 30px;
-          text-align: center;
-          color: #8d95a8;
-          font-size: 15px;
-        }
-        .fs-toggle span {
-          color: #7d8aff;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .fs-toggle span:hover { text-decoration: underline; }
-
-        .fs-footer {
-          margin-top: 32px;
-          padding-top: 24px;
-          border-top: 1px solid rgba(255,255,255,0.05);
-          text-align: center;
-          line-height: 1.9;
-          color: #8d95a8;
-          font-size: 13px;
-        }
-        .fs-clerk { color: white; font-weight: 700; }
-        .fs-dev { color: #ff934d; font-weight: 700; }
-
-        .fs-error {
-          background: rgba(255,70,70,0.08);
-          border: 1px solid rgba(255,70,70,0.2);
-          border-radius: 14px;
-          padding: 12px 16px;
-          margin-bottom: 20px;
-          font-size: 13px;
-          color: #ff8080;
-          line-height: 1.5;
-        }
-
-        .fs-logo-back {
-          position: absolute;
-          top: 32px;
-          left: 40px;
-          z-index: 20;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          text-decoration: none;
-          color: white;
-          opacity: 0.7;
-          font-size: 14px;
-          font-weight: 600;
-          transition: opacity 0.2s;
-        }
-        .fs-logo-back:hover { opacity: 1; }
-        @media(max-width:900px){ .fs-logo-back { left: 20px; top: 20px; } }
-      `}</style>
-
-      <div className="fs-auth-body">
-        {/* Background */}
-        <div className="fs-bg" />
-        <div className="fs-ring" ref={ringRef} />
-        <div className="fs-overlay" />
-        <div className="fs-noise" />
-
-        {/* Back to home */}
-        <a href="/" className="fs-logo-back">
-          ← FARM SHIELD
+      {/* Back to home / Brand header logo */}
+      <div className="w-full max-w-[1600px] px-8 md:px-16 pt-8 pb-4 flex justify-between items-center z-[10] relative">
+        <a href="/" className="flex items-center gap-2 text-white font-sans text-xl font-medium tracking-tight hover:opacity-80 transition-opacity">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor">
+            <path d="M 4.688 136 C 68.373 136 120 187.627 120 251.312 C 120 252.883 119.967 254.445 119.905 256 L 0 256 L 0 136.096 C 1.555 136.034 3.117 136 4.688 136 Z M 251.312 136 C 252.883 136 254.445 136.034 256 136.096 L 256 256 L 136.095 256 C 136.032 254.438 136.001 252.875 136 251.312 C 136 187.627 187.627 136 251.312 136 Z M 119.905 0 C 119.967 1.555 120 3.117 120 4.688 C 120 68.373 68.373 120 4.687 120 C 3.117 120 1.555 119.967 0 119.905 L 0 0 Z M 256 119.905 C 254.445 119.967 252.883 120 251.312 120 C 187.627 120 136 68.373 136 4.687 C 136 3.117 136.033 1.555 136.095 0 L 256 0 Z" />
+          </svg>
+          <span className="tracking-widest text-lg font-bold">FARM SHIELD</span>
         </a>
+      </div>
 
-        {/* Side text */}
-        <div className="fs-side-text">SECURE • SHIELD • GROW</div>
-
-        {/* Auth Panel */}
-        <div className="fs-panel">
-
-          {/* Step bars */}
-          <div className="fs-steps">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
-                key={i}
-                className={`fs-step-bar ${i <= stepIndex ? "active" : ""}`}
-              />
-            ))}
+      {/* Content Wrapper */}
+      <div className="w-full max-w-[1600px] px-8 md:px-16 flex-grow flex flex-col md:flex-row items-center justify-between gap-12 md:gap-16 pt-12 md:pt-20 pb-20 z-[10] relative">
+        {/* Left side / Cosmic Hero typography */}
+        <div className="flex-1 text-left hidden md:flex flex-col gap-6 text-white max-w-lg">
+          <h2 className="text-5xl lg:text-6xl font-bold font-sans tracking-tight leading-[1.1] drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+            Protecting Your Farm <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-yellow-200">
+              With High-Fidelity AI.
+            </span>
+          </h2>
+          <p className="text-white/85 text-base lg:text-lg leading-relaxed font-light font-sans drop-shadow-[0_1px_5px_rgba(0,0,0,0.5)]">
+            Access specialized diagnostic pipelines, interactive crop growth simulators, regional schemes, and deep-learning price forecasts designed for modern agriculture.
+          </p>
+          <div className="flex items-center gap-4 mt-4 text-xs text-white/60 drop-shadow-md">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+              Active Node
+            </span>
+            <span>•</span>
+            <span>SSL Secure</span>
+            <span>•</span>
+            <span>Clerk Shield Verified</span>
           </div>
+        </div>
 
-          {/* Back button (shown after first step) */}
-          {step !== "email" && (
-            <button
-              className="fs-back-btn"
-              onClick={() => {
-                setError("");
-                if (step === "password") setStep("email");
-                else if (step === "name") setStep("email");
-                else if (step === "verify") setStep("name");
-              }}
-            >
-              ← Back
-            </button>
-          )}
+        {/* Right side / Custom interactive Clerk auth panel */}
+        <div className="w-full md:w-[480px] flex justify-center shrink-0">
+          <div className="liquid-glass w-full min-h-[580px] rounded-[36px] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_50px_rgba(52,211,153,0.15)] flex flex-col justify-between">
+            {/* Top light glow inside card */}
+            <div className="absolute -top-12 -left-12 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Title */}
-          <h1 className="fs-title">{renderTitle()}</h1>
-          <div className="fs-subtitle">{renderSubtitle()}</div>
+            <div className="flex flex-col flex-grow justify-between relative z-10">
+              <div>
+                {/* Step bars */}
+                <div className="flex gap-3 mb-8">
+                  {Array.from({ length: totalSteps }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`flex-1 h-1 rounded-full transition-all duration-500 ${
+                        i <= stepIndex ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" : "bg-white/10"
+                      }`}
+                    />
+                  ))}
+                </div>
 
-          {/* Error */}
-          {error && <div className="fs-error">{error}</div>}
+                {/* Back button (shown after first step) */}
+                {step !== "email" && (
+                  <button
+                    className="flex items-center gap-1 text-white/50 hover:text-white text-xs mb-6 transition-colors font-sans"
+                    onClick={() => {
+                      setError("");
+                      if (step === "password") setStep("email");
+                      else if (step === "name") setStep("email");
+                      else if (step === "verify") setStep("name");
+                    }}
+                  >
+                    ← Back
+                  </button>
+                )}
 
-          {/* ── STEP: Email (initial step for both modes) ── */}
-          {step === "email" && (
-            <>
-              {/* Google OAuth */}
-              <button className="fs-google-btn" onClick={handleGoogle} disabled={loading}>
-                <div className="fs-last-used">Recommended</div>
-                <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
-                  <path d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z" fill="#FFC107"/>
-                  <path d="M6.3 14.7l6.6 4.8C14.6 16 19 12 24 12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" fill="#FF3D00"/>
-                  <path d="M24 44c5.2 0 9.9-1.9 13.5-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.1 0-9.6-3.3-11.2-7.9l-6.6 5.1C9.5 40 16.2 44 24 44z" fill="#4CAF50"/>
-                  <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.5l.1-.1 6.2 5.2C37.2 39 44 34 44 24c0-1.2-.1-2.3-.4-3.5z" fill="#1976D2"/>
-                </svg>
-                Continue with Google
-              </button>
+                {/* Title */}
+                <h1 className="text-3xl font-bold font-sans tracking-tight mb-2 text-white">
+                  {renderTitle()}
+                </h1>
+                <p className="text-white/60 text-sm leading-relaxed mb-8 font-sans">
+                  {renderSubtitle()}
+                </p>
 
-              <div className="fs-divider">or</div>
+                {/* Error */}
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6 text-red-300 text-xs leading-relaxed font-sans">
+                    {error}
+                  </div>
+                )}
 
-              {/* Email input */}
-              <div className="fs-field">
-                <label className="fs-label">Email address</label>
-                <input
-                  type="email"
-                  className="fs-input"
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleEmailContinue()}
-                  autoFocus
-                />
-              </div>
+                {/* ── STEP: Email ── */}
+                {step === "email" && (
+                  <div className="space-y-6">
+                    {/* Google OAuth */}
+                    <button
+                      className="w-full h-[60px] rounded-full border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-white flex items-center justify-center gap-3 text-sm font-medium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg relative group font-sans"
+                      onClick={handleGoogle}
+                      disabled={loading}
+                    >
+                      <div className="absolute top-[-9px] right-5 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-semibold text-emerald-300 tracking-wider uppercase opacity-80 group-hover:opacity-100 transition-opacity font-sans">
+                        Recommended
+                      </div>
+                      <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                        <path d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z" fill="#FFC107"/>
+                        <path d="M6.3 14.7l6.6 4.8C14.6 16 19 12 24 12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" fill="#FF3D00"/>
+                        <path d="M24 44c5.2 0 9.9-1.9 13.5-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.1 0-9.6-3.3-11.2-7.9l-6.6 5.1C9.5 40 16.2 44 24 44z" fill="#4CAF50"/>
+                        <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.5l.1-.1 6.2 5.2C37.2 39 44 34 44 24c0-1.2-.1-2.3-.4-3.5z" fill="#1976D2"/>
+                      </svg>
+                      <span>Continue with Google</span>
+                    </button>
 
-              <button
-                className="fs-continue-btn"
-                onClick={handleEmailContinue}
-                disabled={loading || !email.trim()}
-              >
-                {loading ? "Checking..." : "Continue →"}
-              </button>
+                    <div className="flex items-center gap-4 text-xs text-white/30">
+                      <div className="flex-1 h-[1px] bg-white/10" />
+                      <span>or</span>
+                      <div className="flex-1 h-[1px] bg-white/10" />
+                    </div>
 
-              <div className="fs-toggle">
-                {mode === "signin" ? (
-                  <>Don't have an account? <span onClick={() => switchMode("signup")}>Sign up</span></>
-                ) : (
-                  <>Already have an account? <span onClick={() => switchMode("signin")}>Sign in</span></>
+                    {/* Email input */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-white/70 font-sans">Email Address</label>
+                      <input
+                        type="email"
+                        className="w-full h-[60px] rounded-full bg-white/[0.03] border border-white/10 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none px-6 text-sm text-white placeholder-white/20 transition-all duration-300 font-sans"
+                        placeholder="name@example.com"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleEmailContinue()}
+                        autoFocus
+                      />
+                    </div>
+
+                    <button
+                      className="w-full h-[60px] rounded-full bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none font-sans"
+                      onClick={handleEmailContinue}
+                      disabled={loading || !email.trim()}
+                    >
+                      {loading ? "Checking..." : "Continue →"}
+                    </button>
+
+                    <div className="text-center text-xs text-white/50 font-sans">
+                      {mode === "signin" ? (
+                        <>Don't have an account? <span onClick={() => switchMode("signup")} className="text-emerald-400 font-semibold cursor-pointer hover:underline">Sign up</span></>
+                      ) : (
+                        <>Already have an account? <span onClick={() => switchMode("signin")} className="text-emerald-400 font-semibold cursor-pointer hover:underline">Sign in</span></>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── STEP: Name ── */}
+                {step === "name" && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-white/70 font-sans">First Name</label>
+                      <input
+                        type="text"
+                        className="w-full h-[60px] rounded-full bg-white/[0.03] border border-white/10 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none px-6 text-sm text-white placeholder-white/20 transition-all duration-300 font-sans"
+                        placeholder="Enter your first name"
+                        value={firstName}
+                        onChange={e => setFirstName(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && setStep("password")}
+                        autoFocus
+                      />
+                    </div>
+                    <button
+                      className="w-full h-[60px] rounded-full bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none font-sans"
+                      onClick={() => { setError(""); setStep("password"); }}
+                      disabled={!firstName.trim()}
+                    >
+                      Continue →
+                    </button>
+                  </div>
+                )}
+
+                {/* ── STEP: Password ── */}
+                {step === "password" && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-white/70 font-sans">
+                        {mode === "signup" ? "Create a Password" : "Password"}
+                      </label>
+                      <input
+                        type="password"
+                        className="w-full h-[60px] rounded-full bg-white/[0.03] border border-white/10 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none px-6 text-sm text-white placeholder-white/20 transition-all duration-300 font-sans"
+                        placeholder={mode === "signup" ? "At least 8 characters" : "Enter your password"}
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            mode === "signin" ? handleSignIn() : handleSignUp();
+                          }
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                    <button
+                      className="w-full h-[60px] rounded-full bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none font-sans"
+                      onClick={mode === "signin" ? handleSignIn : handleSignUp}
+                      disabled={loading || !password.trim()}
+                    >
+                      {loading
+                        ? (mode === "signin" ? "Signing in..." : "Creating account...")
+                        : (mode === "signin" ? "Sign In →" : "Create Account →")}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── STEP: OTP Verify ── */}
+                {step === "verify" && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-white/70 font-sans">Verification Code</label>
+                      <input
+                        type="text"
+                        className="w-full h-[60px] rounded-full bg-white/[0.03] border border-white/10 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none px-6 text-sm text-white placeholder-white/20 text-center tracking-[8px] transition-all duration-300 font-sans"
+                        placeholder="6-digit code"
+                        value={code}
+                        onChange={e => setCode(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleVerify()}
+                        maxLength={6}
+                        autoFocus
+                      />
+                    </div>
+                    <button
+                      className="w-full h-[60px] rounded-full bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none font-sans"
+                      onClick={handleVerify}
+                      disabled={loading || code.length < 6}
+                    >
+                      {loading ? "Verifying..." : "Verify & Continue →"}
+                    </button>
+                  </div>
                 )}
               </div>
-            </>
-          )}
 
-          {/* ── STEP: Name (sign-up only) ── */}
-          {step === "name" && (
-            <>
-              <div className="fs-field">
-                <label className="fs-label">First name</label>
-                <input
-                  type="text"
-                  className="fs-input"
-                  placeholder="Enter your first name"
-                  value={firstName}
-                  onChange={e => setFirstName(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && setStep("password")}
-                  autoFocus
-                />
+              {/* Clerk & Dev Info */}
+              <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center text-[10px] text-white/40 tracking-wider uppercase font-sans">
+                <span>Powered by Clerk</span>
+                <span className="text-amber-400 font-semibold">Development mode</span>
               </div>
-              <button
-                className="fs-continue-btn"
-                onClick={() => { setError(""); setStep("password"); }}
-                disabled={!firstName.trim()}
-              >
-                Continue →
-              </button>
-            </>
-          )}
-
-          {/* ── STEP: Password (both modes, sign-up sets new password) ── */}
-          {step === "password" && (
-            <>
-              <div className="fs-field">
-                <label className="fs-label">
-                  {mode === "signup" ? "Create a password" : "Password"}
-                </label>
-                <input
-                  type="password"
-                  className="fs-input"
-                  placeholder={mode === "signup" ? "At least 8 characters" : "Enter your password"}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter") {
-                      mode === "signin" ? handleSignIn() : handleSignUp();
-                    }
-                  }}
-                  autoFocus
-                />
-              </div>
-              <button
-                className="fs-continue-btn"
-                onClick={mode === "signin" ? handleSignIn : handleSignUp}
-                disabled={loading || !password.trim()}
-              >
-                {loading
-                  ? (mode === "signin" ? "Signing in..." : "Creating account...")
-                  : (mode === "signin" ? "Sign In →" : "Create Account →")}
-              </button>
-            </>
-          )}
-
-          {/* ── STEP: Email verification (sign-up) ── */}
-          {step === "verify" && (
-            <>
-              <div className="fs-field">
-                <label className="fs-label">Verification code</label>
-                <input
-                  type="text"
-                  className="fs-input"
-                  placeholder="6-digit code"
-                  value={code}
-                  onChange={e => setCode(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleVerify()}
-                  maxLength={6}
-                  autoFocus
-                />
-              </div>
-              <button
-                className="fs-continue-btn"
-                onClick={handleVerify}
-                disabled={loading || code.length < 6}
-              >
-                {loading ? "Verifying..." : "Verify & Continue →"}
-              </button>
-            </>
-          )}
-
-          {/* Footer */}
-          <div className="fs-footer">
-            Secured by <span className="fs-clerk">Clerk</span>
-            <br />
-            <span className="fs-dev">Development mode</span>
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </main>
   );
 }

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { m, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import { Landmark, TrendingUp, Users, Phone } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,18 @@ export default function Schemes() {
   const [selectedScheme, setSelectedScheme] = useState<GovernmentScheme | null>(null);
   const [eligibilityOpen, setEligibilityOpen] = useState(false);
 
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothX = useSpring(mouseX, { damping: 50, stiffness: 400 });
+  const smoothY = useSpring(mouseY, { damping: 50, stiffness: 400 });
+  const bgGradient = useMotionTemplate`radial-gradient(800px circle at ${smoothX}px ${smoothY}px, rgba(34,197,94,0.12), transparent 80%)`;
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => { mouseX.set(e.clientX); mouseY.set(e.clientY); };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
+
   const filteredSchemes = useMemo(() => {
     return governmentSchemes.filter(scheme => {
       const matchesCategory = selectedCategory === 'all' || scheme.category === selectedCategory;
@@ -53,7 +66,8 @@ export default function Schemes() {
 
   return (
     <Layout>
-      <div className="container py-8">
+      <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+      <div className="container py-8 relative z-10">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Government Schemes</h1>

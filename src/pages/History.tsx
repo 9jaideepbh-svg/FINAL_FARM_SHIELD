@@ -453,6 +453,29 @@ export default function History() {
               </div>
             )}
           </div>
+          {/* ── Download PDF from detail modal ───────────────────────────── */}
+          {selectedRecord && selectedRecord.groqResponse && (
+            <div className="flex justify-center pt-2 pb-4 border-t border-border mt-4">
+              <Button
+                onClick={(e) => handleDownloadPDF(e, selectedRecord)}
+                disabled={pdfLoadingId === selectedRecord.id}
+                size="lg"
+                className="gap-2 px-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/20 hover:scale-[1.02] transition-all duration-300"
+              >
+                {pdfLoadingId === selectedRecord.id ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Generating PDF…
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-5 w-5" />
+                    Download PDF Report
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>

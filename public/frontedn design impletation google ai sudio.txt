@@ -1,0 +1,87 @@
+Hey Google Antigravity,
+
+Now I want to replace the existing frontend of our app completely with the new frontend design that I already created in Lumina / Google AI Studio.
+
+I will provide a GitHub repository containing the complete frontend implementation/design.
+
+Important Instructions:
+
+1. Frontend Replacement
+
+- Completely replace the current homepage/frontend with the new provided design.
+- Do NOT mix or merge randomly with the old frontend structure.
+- Keep the new frontend implementation in a separate organized folder/structure initially so the codebase stays clean and understandable for future developers.
+- Preserve the exact UI/UX, spacing, animations, responsiveness, layout, screen proportions, and interactions from the provided design.
+- Do not redesign or modify anything visually.
+
+2. Full Homepage Implementation
+
+- Implement the new homepage exactly as designed.
+- Especially preserve:
+  - the intro black screen animation
+  - transition effects
+  - moving card animations
+  - horizontal scrolling animations
+  - hover interactions
+  - motion effects
+  - all visual transitions.
+
+3. Routing Integration
+
+- After implementing the frontend, connect all routes properly with the existing app structure.
+- Ensure all navbar items and buttons work correctly:
+  - Home
+  - KrishiSetu
+  - Kisan Times
+  - Diagnosis
+  - Weather
+  - Soil Intelligence
+  - Price Forecasting
+  - Government Schemes
+  - Login
+  - Signup
+  - Dashboard
+  - and all CTA buttons.
+
+4. Functional Navigation
+
+- Every clickable element must navigate correctly to its corresponding page.
+- No dead buttons.
+- No broken routes.
+- Maintain smooth transitions between pages.
+
+5. Authentication Rules
+
+- Preserve the existing authentication logic and security rules:
+  - user must login before accessing protected features
+  - unauthorized users should not access internal pages
+  - existing access restrictions must remain intact.
+
+6. Animation Support
+
+- The horizontal moving card animations must work exactly as designed.
+- Preserve scrolling animations and cinematic effects.
+- Ensure all animations are smooth and GPU optimized.
+
+7. Backend Compatibility
+
+- After frontend implementation, properly reconnect it with:
+  - existing backend logic
+  - routing system
+  - Firebase/Supabase integrations
+  - APIs
+  - authentication flow
+  - diagnosis pipeline
+  - user session handling.
+
+8. Mobile Responsiveness
+
+- Maintain exact responsiveness from the provided design.
+- No text overflow.
+- No broken layouts.
+- No resizing inconsistencies.
+- Keep the same visual feel across desktop and mobile.
+
+9. Final Goal
+
+- The final implementation should look visually identical to the provided frontend design while remaining fully connected to the existing backend and app functionality.

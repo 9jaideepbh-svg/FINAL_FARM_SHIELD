@@ -1,0 +1,31 @@
+Make sure u go through and imply these changes exactly !! 
+
+1. Home page- there are few changes in home page as i mention do it
+
+a) hero section there the font "Smart decision" is in green colour convert tht into black colour only 
+
+b) the 2nd glass layer box(below the first box)  ,inside it font are small ,make it a bit visible by increasing the font size a bit 
+
+c)in header I want farmshield logo ,i will send uh u just integrate it (see attached image )
+
+d)u have a task create a SEO page at bottom not a normal one first task is read my whole website,all details and wt it is about based on tht make a big SEO page at bottom with FAQ (faq are not random u only see which questions are perfect with respect to user and provide answer seeing the features of our app) take inspiration of SEO from any other websites which uk is best in market using chrome dev tools research and work 
+
+e) remove chat bot ,keep only mic option which is yellow in colour as that only works both like chat & voice already 
+
+f) once users taps on voice assianant feature! Make sure u ask mandatory question to choose a language among which I have provided,once he selects tht language irrespective of antg be answering in tht language the user as selected that's it ,if any other language user text or send a voice mail,u listen and reply to it in the language user as selected in the beginning that's it don't change!!
+
+2.Krishi setu section - 
+
+a)Remove tht search & support icon which is in yellow & green colour respectively 
+
+b)keep language option of kannada hindi english at every page of I am farmer & i am labour section, so for example once user goes to i am farmer and he gives access to location he gets nearby labour results right? At tht page too give a language option of English kannada hindi at top so he can choose and automatically result will be translated into the language which user as chossed 
+
+3. Crop simulator page - 
+
+a)in this the select crop option try to add more Karnataka based foods and vegetables or fruits ,the options are less sooo
+
+4. Weather section 
+
+I will give u api key for this make sure it's called through supabase edge function and give results (weather api - eef3f9212c0a3d95cf8832baad2d6fc6)                                                      
+
+                                             5- MOBILE RESPONSIVE IS COMPULSARY --                                            Make the entire application fully mobile responsive across all screen sizes while preserving the exact current UI/UX design, spacing, gradients, glassmorphism, animations, and interactions. Ensure no text, font, button, card, navbar item, image, or line breaks improperly on smaller screens. Fix all overflow, clipping, scaling, wrapping, and alignment issues. Maintain smooth performance and fast interactions on mobile devices. Ensure all sections, modals, cards, forms, tables, cursor effects, and animations adapt properly using responsive Tailwind breakpoints without changing the existing visual identity of the app.

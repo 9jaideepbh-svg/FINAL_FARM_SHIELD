@@ -5,7 +5,10 @@
  * API: https://my-api.plantnet.org/v2/identify/all
  */
 
-const PLANTNET_API_KEY = import.meta.env.VITE_PLANTNET_API_KEY as string;
+// NOTE: PlantNet identification is handled server-side in the plant-diagnosis Supabase Edge Function.
+// The PLANTNET_API_KEY must NOT be set here — it lives only in Supabase secret storage.
+const PLANTNET_API_KEY = ""; // intentionally empty — see supabase/functions/plant-diagnosis/index.ts
+
 
 export interface PlantNetResult {
   scientificName: string;

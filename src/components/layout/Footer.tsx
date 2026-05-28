@@ -1,7 +1,8 @@
 import { Leaf, Github, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
+import { memo } from "react";
 
-export function Footer() {
+export const Footer = memo(function Footer() {
   return (
     <footer className="border-t bg-muted/30">
       <div className="container py-12">
@@ -70,4 +71,4 @@ export function Footer() {
       </div>
     </footer>
   );
-}
+});

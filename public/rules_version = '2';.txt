@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────
+
+    // Check if user is logged in
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    // Check if the requesting user owns this document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Validate string fields — prevent injection attacks
+    function isValidString(value, maxLength) {
+      return value is string 
+        && value.size() <= maxLength
+        && value.size() > 0;
+    }
+
+    // Validate that incoming data has no extra fields
+    function hasOnlyAllowedFields(data, allowedFields) {
+      return data.keys().hasOnly(allowedFields);
+    }
+
+    // ── plant_diagnosis_history collection ────────────
+    match /plant_diagnosis_history/{diagnosisId} {
+
+      // Read: only the owner can read their own diagnosis
+      allow read: if isLoggedIn() 
+        && isOwner(resource.data.userId);
+
+      // Create: only logged in user can create 
+      // and userId must match their own auth uid
+      allow create: if isLoggedIn()
+        && isOwner(request.resource.data.userId)
+        && request.resource.data.userId == request.auth.uid
+        && isValidString(request.resource.data.userId, 128)
+        && isValidString(request.resource.data.plantName, 200)
+        && isValidString(request.resource.data.diseaseName, 200)
+        && request.resource.data.confidence is number
+        && request.resource.data.confidence >= 0
+        && request.resource.data.confidence <= 100
+        && request.resource.data.createdAt != null;
+
+      // Update: only owner can update their own records
+      allow update: if isLoggedIn()
+        && isOwner(resource.data.userId)
+        && request.resource.data.userId == resource.data.userId;
+
+      // Delete: only owner can delete their own records
+      allow delete: if isLoggedIn()
+        && isOwner(resource.data.userId);
+    }
+
+    // ── users collection ─────────────────────────────
+    match /users/{userId} {
+
+      // User can only read and write their own profile
+      allow read: if isLoggedIn() 
+        && isOwner(userId);
+
+      allow create: if isLoggedIn()
+        && isOwner(userId)
+        && isValidString(request.resource.data.email, 256)
+        && request.resource.data.createdAt != null;
+
+      allow update: if isLoggedIn()
+        && isOwner(userId)
+        && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if false; 
+      // Nobody can delete user profiles
+    }
+
+    // ── workers collection ───────────────────────────
+    match /workers/{workerId} {
+
+      // Only logged in users can read workers
+      allow read: if isLoggedIn();
+
+      // Only the owner worker can write their own data
+      allow write: if isLoggedIn()
+        && isOwner(workerId);
+    }
+
+    // ── Block ALL other collections by default ────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

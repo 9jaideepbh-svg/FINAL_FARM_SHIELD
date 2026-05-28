@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CloudRain, Droplet, Sun, Thermometer, Info, ShieldAlert, BadgeIndianRupee, TrendingUp, RefreshCw, Send, Loader2, User, Clock } from "lucide-react";
 import { INDIA_STATES_AND_DISTRICTS } from "@/lib/india-states";
+import { supabase } from "@/integrations/supabase/client";
 import "./CropSimulator.css";
 
 // Types based on the prompt's JSON structure
@@ -49,7 +50,23 @@ interface SimulationResult {
   farmingTips: string[];
 }
 
-const CROPS = ["Paddy", "Wheat", "Tomato", "Cotton", "Sugarcane", "Maize", "Onion", "Potato", "Groundnut", "Soybean"];
+const CROPS = [
+  // Cereals & Millets
+  "Paddy", "Wheat", "Maize", "Ragi (Finger Millet)", "Jowar (Sorghum)", "Bajra (Pearl Millet)",
+  // Pulses
+  "Tur (Pigeon Pea)", "Bengal Gram (Chickpea)", "Green Gram (Moong)", "Black Gram (Urad)", "Cowpea (Alasande)", "Field Bean (Avarekai)",
+  // Oilseeds
+  "Groundnut", "Soybean", "Sunflower", "Safflower", "Sesame (Til)", "Castor", "Linseed",
+  // Cash Crops & Spices
+  "Sugarcane", "Cotton", "Tobacco", "Arecanut", "Coconut", "Coffee", "Pepper", "Cardamom", "Cashew", "Chilli (Byadagi)", "Turmeric", "Ginger", "Garlic", "Coriander", "Mustard", "Curry Leaves",
+  // Fruits
+  "Mango", "Banana (Nanjangud Rasabale)", "Pomegranate", "Grapes", "Coorg Orange", "Sapota (Chikoo)", "Jackfruit", "Papaya", "Guava", "Watermelon", "Fig (Anjeer)",
+  // Vegetables
+  "Tomato", "Onion (Bengaluru Rose)", "Potato", "Sweet Potato", "Brinjal (Mattu Gulla)", "Lady's Finger (Okra)", "Bitter Gourd", "Bottle Gourd", "Ridge Gourd", "Cucumber", "Pumpkin", "Cabbage", "Cauliflower", "Carrot", "Radish", "Beetroot", "French Beans", "Cluster Beans",
+  // Leafy Vegetables
+  "Spinach (Palak)", "Amaranth (Dantina Soppu)", "Mint (Pudina)"
+].sort();
+
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const LANG_SYSTEM_SUFFIX = {
@@ -68,7 +85,7 @@ const navLinks = [
   { href: "/price-forecast", label: "Price Forecasting" },
   { href: "/simulator", label: "Crop Simulator" },
   { href: "/weather", label: "Weather" },
-  { href: "/soil", label: "Soil Analysis" },
+  { href: "/soil-intelligence", label: "Soil Intelligence" },
 ];
 
 export default function CropSimulator() {
@@ -109,11 +126,10 @@ export default function CropSimulator() {
     setChatHistory([]);
 
     try {
-      // Step 1: OpenWeatherMap Geocoding
+      // Step 1: OpenWeatherMap Geocoding (key is lower-sensitivity, weather public API)
       let lat = 0;
       let lon = 0;
-      let weatherData = { avgTemp: 0, rainfall: 0, humidity: 0 };
-      let hasWeatherData = false;
+      let weatherData: { avgTemp: number; rainfall: number; humidity: number } | null = null;
 
       const weatherKey = import.meta.env.VITE_OPENWEATHER_KEY;
 
@@ -144,102 +160,29 @@ export default function CropSimulator() {
               humidity: Math.round(humSum / forecastData.list.length),
               rainfall: Math.round(rainSum)
             };
-            hasWeatherData = true;
           }
         } else {
           setWeatherError(true);
         }
-      } catch (e) {
-        console.error("Weather API error:", e);
+      } catch {
         setWeatherError(true);
       }
 
-      // Step 2: Groq API Call
-      const groqKey = import.meta.env.VITE_GROQ_KEY;
-      if (!groqKey) throw new Error("Groq API key is missing");
-
-      const systemInstruction = `
-You are an expert Indian agricultural advisor with deep knowledge of Indian farming conditions, crop diseases, mandi prices, and seasonal patterns across all Indian states and districts.
-
-CRITICAL: Do NOT repeat the same generic price range for all crops. 
-Estimate the most realistic current harvest price for the specific crop and location.
-
-When given crop details, you simulate a full season and respond ONLY in valid JSON with this exact structure:
-{
-  "season": {
-    "crop": "string",
-    "plantingMonth": "string", 
-    "harvestMonth": "string",
-    "durationDays": number,
-    "seasonType": "Kharif | Rabi | Zaid"
-  },
-  "weatherRisks": {
-    "level": "LOW | MEDIUM | HIGH",
-    "risks": ["risk1", "risk2", "risk3"],
-    "avgTempC": number,
-    "rainfallMm": number
-  },
-  "diseases": [
-    {
-      "name": "string",
-      "likelihood": "LOW | MEDIUM | HIGH",
-      "prevention": "string (one line)"
-    }
-  ],
-  "priceForecast": {
-    "minPricePerQuintal": number,
-    "maxPricePerQuintal": number,
-    "trend": "Rising | Stable | Falling",
-    "bestSellMonth": "string",
-    "reasoning": "string (one line)"
-  },
-  "profitPerAcre": {
-    "costOfCultivation": number,
-    "expectedYieldQuintals": number,
-    "expectedRevenue": number,
-    "netProfit": number,
-    "currency": "INR"
-  },
-  "farmingTips": ["tip1", "tip2", "tip3"]
-}`;
-
-      const userMessage = `
-Simulate a crop season with these details:
-- Crop: ${selectedCrop}
-- District: ${district}
-- State: ${state}  
-- Planting Month: ${month}
-- Weather Data from OpenWeatherMap: 
-  Average Temperature: ${hasWeatherData ? weatherData.avgTemp + '°C' : 'Unknown'}
-  Expected Rainfall: ${hasWeatherData ? weatherData.rainfall + 'mm' : 'Unknown'}
-  Humidity: ${hasWeatherData ? weatherData.humidity + '%' : 'Unknown'}
-
-Give realistic Indian market prices in INR for this specific district/state combination. Base disease risks on actual known diseases for this crop in this region and season. Return ONLY valid JSON matching the system instruction. Do not wrap in markdown tags.`;
-
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${groqKey}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: systemInstruction },
-            { role: "user", content: userMessage }
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.2
-        })
+      // Step 2: Call crop-simulator edge function — GROQ_API_KEY stays server-side
+      const { data: simData, error: simError } = await supabase.functions.invoke('crop-simulator', {
+        body: {
+          mode: 'simulate',
+          crop: selectedCrop,
+          district,
+          state,
+          month,
+          weatherData
+        }
       });
 
-      const groqData = await groqRes.json();
-      if (!groqRes.ok) throw new Error(groqData.error?.message || "Failed to fetch from Groq");
+      if (simError) throw new Error(simError.message || 'Simulation failed');
 
-      const responseText = groqData.choices[0].message.content;
-      const parsedJson = JSON.parse(responseText);
-
-      setResult(parsedJson);
+      setResult(simData);
 
     } catch (err: any) {
       toast({
@@ -261,52 +204,26 @@ Give realistic Indian market prices in INR for this specific district/state comb
     setIsChatLoading(true);
 
     try {
-      const groqKey = import.meta.env.VITE_GROQ_KEY;
+      // Route through crop-simulator edge function — GROQ_API_KEY stays server-side
+      const chatMessages = newChat.map(m => ({
+        role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+        content: m.content
+      }));
 
-      const systemInstruction = `You are Krishi Voice, an Indian farming assistant.
-
-LANGUAGE RULE — THIS IS YOUR MOST IMPORTANT RULE:
-1. Look at the user's message carefully
-2. Detect what language it is written in
-3. Reply in THAT EXACT SAME language — no exceptions
-4. NEVER switch languages on your own
-
-Examples:
-- User writes in English → You reply in English ONLY
-- User writes in Kannada (ಕನ್ನಡ) → You reply in Kannada ONLY
-- User writes in Hindi → You reply in Hindi ONLY
-- User writes in Tamil → You reply in Tamil ONLY
-- USER SPEAK IN WHICH LANGUAGE=REPLY IN THAT LANGUAGE ONLY
-If you are unsure of the language → reply in English.
-
-FARMING RULE:
-- Answer farming questions only
-- Keep reply between 50 and 90 words
-- Give one clear actionable tip, and say where can he make more profit
-- Use simple language a rural farmer understands
-
-Context for your answer: The user just ran a simulation for ${result?.season?.crop} in ${district}, ${state}, ${month}.
-${LANG_SYSTEM_SUFFIX["en-IN"]}`;
-
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${groqKey}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: systemInstruction },
-            ...newChat.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }))
-          ],
-          temperature: 0.7
-        })
+      const { data, error } = await supabase.functions.invoke('crop-simulator', {
+        body: {
+          mode: 'chat',
+          crop: result?.season?.crop ?? selectedCrop,
+          district,
+          state,
+          month,
+          chatHistory: chatMessages
+        }
       });
 
-      const data = await res.json();
-      setChatHistory([...newChat, { role: 'ai', content: data.choices[0].message.content }]);
-    } catch (err) {
+      if (error) throw new Error(error.message);
+      setChatHistory([...newChat, { role: 'ai', content: data?.reply ?? 'No response received.' }]);
+    } catch {
       toast({ title: "Failed to get answer", variant: "destructive" });
     } finally {
       setIsChatLoading(false);

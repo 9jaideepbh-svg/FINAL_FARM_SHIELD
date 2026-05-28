@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 type SupportedLanguage =
   | "en-US"
@@ -101,29 +102,60 @@ export function VoiceNavigation() {
 
   const { toast } = useToast();
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleOpen = () => {
+      setIsOpen(true);
+    };
+    window.addEventListener("open-voice-assistant", handleOpen);
+    return () => {
+      window.removeEventListener("open-voice-assistant", handleOpen);
+    };
+  }, []);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, hasSelectedLanguage]);
 
-  const groqTTS = async (text: string) => {
-    const groqKey = import.meta.env.VITE_GROQ_KEY;
-    if (!groqKey) return;
-
+  const groqTTS = useCallback(async (text: string) => {
     try {
       setIsSpeaking(true);
-      const response = await fetch("https://api.groq.com/openai/v1/audio/speech", {
+      // groq-voice edge function handles TTS — GROQ_API_KEY stays server-side
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/groq-voice`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${groqKey}`
+          "x-voice-mode": "tts",
+          "x-voice-gender": voiceGender,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
         },
-        body: JSON.stringify({
-          model: "canopylabs/orpheus-v1-english",
-          voice: voiceGender === "female" ? "samantha" : "david",
-          input: text
-        })
+        body: JSON.stringify({ text })
       });
 
       if (!response.ok) throw new Error("TTS failed");
@@ -134,8 +166,7 @@ export function VoiceNavigation() {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-      audio.play().catch(e => {
-        console.error("Autoplay blocked or failed:", e);
+      audio.play().catch(() => {
         toast({
           title: "Audio Blocked",
           description: "Browser blocked autoplay. Please tap anywhere on the screen or use the 'Play' button on the message.",
@@ -147,16 +178,53 @@ export function VoiceNavigation() {
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
-    } catch (error) {
-      console.error("TTS Error:", error);
+    } catch {
       setIsSpeaking(false);
     }
-  };
+  }, [voiceGender, toast]);
+
+  const speakText = useCallback(async (text: string, langCode: SupportedLanguage) => {
+    if (langCode === "en-US") {
+      await groqTTS(text);
+      return;
+    }
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(true);
+
+      const cleanText = text.replace(/[*#_`~]/g, "");
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = langCode;
+
+      const voices = window.speechSynthesis.getVoices();
+      const matchingVoice = voices.find(v => v.lang.toLowerCase().startsWith(langCode.split("-")[0].toLowerCase()));
+      if (matchingVoice) {
+        utterance.voice = matchingVoice;
+      }
+
+      utterance.onend = () => {
+        setIsSpeaking(false);
+      };
+
+      utterance.onerror = (e) => {
+        console.error("SpeechSynthesis error:", e);
+        setIsSpeaking(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn("Speech synthesis not supported in this browser.");
+    }
+  }, [groqTTS]);
 
   const stopSpeaking = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+    }
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
     setIsSpeaking(false);
   }, []);
@@ -171,20 +239,8 @@ export function VoiceNavigation() {
     setIsLoading(true);
 
     try {
-      const groqKey = import.meta.env.VITE_GROQ_KEY;
-
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${groqKey}`,
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            {
-              role: "system",
-              content: `You are Krishi Voice, an Indian farming assistant.
+      // groq-chat edge function — GROQ_API_KEY stays server-side
+      const systemPromptOverride = `You are Krishi Voice, an Indian farming assistant.
 
 LANGUAGE RULE — THIS IS YOUR MOST IMPORTANT RULE:
 1. You must reply strictly in the language requested by the user, which is: ${LANG_LABELS[language].name} (${LANG_LABELS[language].native}).
@@ -196,37 +252,27 @@ FARMING RULE:
 - Answer farming, crop, pest, treatment, soil, water, and scheme questions.
 - Maintain a premium, expert tone.
 
-${LANG_SYSTEM_SUFFIX[language]}`
-            },
-            ...newMessages.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }))
-          ],
-          temperature: 0.7
-        }),
+${LANG_SYSTEM_SUFFIX[language]}`;
+
+      const { data, error } = await supabase.functions.invoke('groq-chat', {
+        body: {
+          messages: newMessages.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
+          systemPromptOverride
+        }
       });
 
-      if (!response.ok) throw new Error("Chat failed");
+      if (error) throw new Error(error.message || "Chat failed");
 
-      const data = await response.json();
-      const assistantContent = data.choices[0].message.content;
-
+      const assistantContent = data?.choices?.[0]?.message?.content ?? "";
       setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
+      speakText(assistantContent, language);
 
-      const isEnglish = (text: string) => {
-        const latinChars = text.match(/[A-Za-z0-9\s.,!?'"()]/g) || [];
-        return (latinChars.length / text.length) > 0.8;
-      };
-
-      if (isEnglish(assistantContent)) {
-        groqTTS(assistantContent);
-      }
-
-    } catch (error) {
-      console.error("Voice chat error:", error);
+    } catch {
       toast({ title: "Error", description: "Failed to get AI response", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading, language, voiceGender, toast]);
+  }, [messages, isLoading, language, voiceGender, toast, speakText]);
 
   const startListening = async () => {
     try {
@@ -263,21 +309,21 @@ ${LANG_SYSTEM_SUFFIX[language]}`
   };
 
   const handleSTT = async (blob: Blob) => {
-    const groqKey = import.meta.env.VITE_GROQ_KEY;
     setIsLoading(true);
     setTranscript("Processing voice...");
 
     try {
+      // groq-voice edge function handles STT — GROQ_API_KEY stays server-side
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
       const formData = new FormData();
       formData.append("file", blob, "audio.webm");
-      formData.append("model", "whisper-large-v3");
-      formData.append("language", language.split("-")[0]);
-      formData.append("response_format", "json");
 
-      const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/groq-voice`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${groqKey}`
+          "x-voice-mode": "stt",
+          "x-language": language,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
         },
         body: formData
       });
@@ -290,8 +336,7 @@ ${LANG_SYSTEM_SUFFIX[language]}`
         setInput(data.text);
         sendMessage(data.text);
       }
-    } catch (error) {
-      console.error("STT Error:", error);
+    } catch {
       toast({ title: "Voice Error", description: "Failed to transcribe audio.", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -306,10 +351,11 @@ ${LANG_SYSTEM_SUFFIX[language]}`
   return (
     <>
       <Button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-50 transition-all",
-          isOpen ? "bg-destructive hover:bg-destructive/90" : "bg-accent hover:bg-accent/90 text-accent-foreground"
+          isOpen ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : "bg-yellow-400 hover:bg-yellow-500 text-yellow-950"
         )}
         size="icon"
       >
@@ -317,7 +363,7 @@ ${LANG_SYSTEM_SUFFIX[language]}`
       </Button>
 
       {isOpen && (
-        <div className="fixed bottom-[7.5rem] right-6 w-[380px] h-[520px] flex flex-col bg-card/90 backdrop-blur-xl rounded-2xl shadow-2xl z-50 border border-primary/20 animate-in slide-in-from-bottom-5">
+        <div ref={modalRef} className="fixed bottom-[7.5rem] right-6 w-[380px] h-[520px] flex flex-col bg-card/90 backdrop-blur-xl rounded-2xl shadow-2xl z-50 border border-primary/20 animate-in slide-in-from-bottom-5">
           <div className="py-3 px-4 border-b bg-primary/5 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
@@ -370,6 +416,9 @@ ${LANG_SYSTEM_SUFFIX[language]}`
 
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={clearChat}>
                 <Trash2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)}>
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -462,7 +511,7 @@ ${LANG_SYSTEM_SUFFIX[language]}`
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 absolute -right-8 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => groqTTS(msg.content)}
+                            onClick={() => speakText(msg.content, language)}
                             title="Replay audio"
                           >
                             <Volume2 className="h-3 w-3" />
@@ -510,7 +559,7 @@ ${LANG_SYSTEM_SUFFIX[language]}`
                   onClick={() => isListening ? stopListening() : startListening()}
                   className={cn(
                     "shrink-0 h-11 w-11 rounded-full",
-                    isListening ? "bg-destructive hover:bg-destructive/90 animate-pulse" : "bg-accent hover:bg-accent/90 text-accent-foreground"
+                    isListening ? "bg-destructive hover:bg-destructive/90 animate-pulse" : "bg-yellow-400 hover:bg-yellow-500 text-yellow-950"
                   )}
                 >
                   {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}

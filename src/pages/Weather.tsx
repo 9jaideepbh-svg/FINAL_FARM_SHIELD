@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { m, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import { 
   Loader2, 
   Cloud, 
@@ -99,6 +100,18 @@ export default function Weather() {
   const [city, setCity] = useState("");
   const [searchCity, setSearchCity] = useState("");
 
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothX = useSpring(mouseX, { damping: 50, stiffness: 400 });
+  const smoothY = useSpring(mouseY, { damping: 50, stiffness: 400 });
+  const bgGradient = useMotionTemplate`radial-gradient(800px circle at ${smoothX}px ${smoothY}px, rgba(34,197,94,0.12), transparent 80%)`;
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => { mouseX.set(e.clientX); mouseY.set(e.clientY); };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
+
   useEffect(() => {
     // Try to get user's location on mount
     if (navigator.geolocation) {
@@ -198,7 +211,8 @@ export default function Weather() {
 
   return (
     <Layout>
-      <div className="container py-8 md:py-12 max-w-5xl">
+      <m.div className="pointer-events-none fixed inset-0 z-0" style={{ background: bgGradient }} />
+      <div className="container py-8 md:py-12 max-w-5xl relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Weather Dashboard</h1>
           <p className="text-muted-foreground">

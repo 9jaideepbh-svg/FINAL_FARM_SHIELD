@@ -12,10 +12,10 @@ serve(async (req) => {
 
   try {
     const OPENWEATHERMAP_API_KEY = Deno.env.get("OPENWEATHERMAP_API_KEY");
-    if (!OPENWEATHERMAP_API_KEY) {
-      throw new Error("OPENWEATHERMAP_API_KEY is not configured");
-    }
 
+    if (!OPENWEATHERMAP_API_KEY) {
+      throw new Error("OPENWEATHERMAP_API_KEY is not set");
+    }
     const { lat, lon, city } = await req.json();
 
     let weatherUrl: string;

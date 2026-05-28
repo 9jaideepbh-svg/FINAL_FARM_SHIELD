@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, History } from "lucide-react";
+import { Menu, X, History, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { UserButton, useUser } from "@clerk/clerk-react";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import GlassSurface from "@/components/GlassSurface";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -17,9 +24,10 @@ const navLinks = [
   { href: "/soil-intelligence", label: "Soil Intelligence" },
 ];
 
-export function Header() {
+export const Header = memo(function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isSignedIn } = useUser();
+  const { user, isSignedIn } = useUser();
+  const { signOut } = useClerk();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,8 +37,14 @@ export function Header() {
         <GlassSurface width="100%" height="auto" borderRadius={40} opacity={0.7} backgroundOpacity={0.2} distortionScale={0} blur={20} className="w-full shadow-lg border border-white/20">
           <div className="flex h-16 md:h-20 items-center justify-between px-6 md:px-8 w-full gap-4">
             {/* Logo */}
-            <Link to="/" className="flex items-center shrink-0">
-              <span className="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight whitespace-nowrap">FARM SHIELD<sup className="text-sm font-medium">®</sup></span>
+            <Link to="/" className="flex items-center gap-2 shrink-0 group">
+              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-green-400 p-0.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+                <img src="/favicon.ico" alt="Farm Shield Logo" className="w-full h-full object-cover rounded-[10px] bg-white" onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center"><svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></div>';
+                }} />
+              </div>
+              <span className="text-xl md:text-2xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-emerald-800 to-emerald-950">FARM SHIELD<sup className="text-sm font-medium text-emerald-600">®</sup></span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -50,27 +64,38 @@ export function Header() {
 
             {/* Desktop Auth */}
             <div className="hidden md:flex items-center gap-4 shrink-0">
-              {isSignedIn ? (
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-sm text-gray-600 hover:text-gray-900"
-                    onClick={() => navigate("/history")}
-                  >
-                    <History className="mr-1.5 h-4 w-4" />
-                    History
-                  </Button>
-                  {/* Clerk's built-in user button — handles avatar, profile, sign out */}
-                  <UserButton
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: "h-9 w-9",
-                      },
-                    }}
-                  />
-                </div>
+              {isSignedIn && user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-3 pl-2 pr-5 py-1.5 rounded-full bg-[#f8f9fb] border border-gray-100 shadow-sm hover:shadow-md hover:bg-white transition-all focus:outline-none">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center text-white shadow-sm overflow-hidden">
+                        {user.hasImage ? (
+                          <img src={user.imageUrl} alt="Profile" className="h-full w-full object-cover" />
+                        ) : (
+                          <User className="h-5 w-5 fill-current" />
+                        )}
+                      </div>
+                      <span className="text-[15px] font-semibold text-gray-800 tracking-wide">
+                        {user.fullName?.toUpperCase() || user.primaryEmailAddress?.emailAddress?.split('@')[0].toUpperCase() || 'USER'}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 rounded-xl border-gray-100 shadow-xl bg-white p-2">
+                    <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer rounded-lg py-2.5 font-medium text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Manage Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/history")} className="cursor-pointer rounded-lg py-2.5 font-medium text-gray-700 focus:bg-gray-50 focus:text-gray-900 transition-colors">
+                      <History className="mr-2 h-4 w-4" />
+                      <span>History</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer rounded-lg py-2.5 font-medium text-red-600 focus:bg-red-50 focus:text-red-700 transition-colors">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-full px-6 py-2 text-sm font-medium" asChild>
                   <Link to="/auth?tab=signin">Begin Journey</Link>
@@ -109,17 +134,58 @@ export function Header() {
                 </Link>
               ))}
               <div className="pt-6 mt-2 border-t border-gray-100">
-                {isSignedIn ? (
-                  <div className="flex items-center gap-3">
-                    <UserButton
-                      afterSignOutUrl="/"
-                      appearance={{
-                        elements: {
-                          avatarBox: "h-10 w-10",
-                        },
+                {isSignedIn && user ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3 px-3 py-4 bg-gray-50/80 rounded-2xl mb-2 border border-gray-100">
+                      <div className="h-11 w-11 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center text-white shadow-sm overflow-hidden shrink-0">
+                        {user.hasImage ? (
+                          <img src={user.imageUrl} alt="Profile" className="h-full w-full object-cover" />
+                        ) : (
+                          <User className="h-6 w-6 fill-current" />
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-base font-bold text-gray-800">
+                          {user.fullName || user.primaryEmailAddress?.emailAddress?.split('@')[0]}
+                        </span>
+                        <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                          {user.primaryEmailAddress?.emailAddress}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start py-6 text-lg rounded-xl font-medium text-gray-700"
+                      onClick={() => {
+                        navigate("/profile");
+                        setMobileMenuOpen(false);
                       }}
-                    />
-                    <span className="text-sm text-gray-600">Account</span>
+                    >
+                      <User className="mr-3 h-5 w-5" />
+                      Manage Profile
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start py-6 text-lg rounded-xl font-medium text-gray-700"
+                      onClick={() => {
+                        navigate("/history");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <History className="mr-3 h-5 w-5" />
+                      History
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start py-6 text-lg rounded-xl font-medium text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100 transition-colors"
+                      onClick={() => {
+                        signOut();
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="mr-3 h-5 w-5" />
+                      Sign out
+                    </Button>
                   </div>
                 ) : (
                   <Button
@@ -138,4 +204,4 @@ export function Header() {
       </div>
     </header>
   );
-}
+});
