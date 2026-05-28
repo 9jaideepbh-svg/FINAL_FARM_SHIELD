@@ -38,22 +38,22 @@ export const Header = memo(function Header() {
           <div className="flex h-16 md:h-20 items-center justify-between px-4 md:px-8 xl:px-4 2xl:px-8 w-full gap-2 md:gap-4 xl:gap-2 2xl:gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0 group">
-              <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-green-400 p-0.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+              <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10 xl:w-8 xl:h-8 2xl:w-10 2xl:h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-green-400 p-0.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
                 <img src="/favicon.ico" alt="Farm Shield Logo" className="w-full h-full object-cover rounded-[10px] bg-white" onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center"><svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></div>';
                 }} />
               </div>
-              <span className="text-xl md:text-2xl xl:text-xl 2xl:text-2xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-emerald-800 to-emerald-950">FARM SHIELD<sup className="text-sm font-medium text-emerald-600">®</sup></span>
+              <span className="text-lg md:text-2xl xl:text-base 2xl:text-xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-emerald-800 to-emerald-950">FARM SHIELD<sup className="text-[10px] md:text-sm xl:text-[10px] 2xl:text-xs font-medium text-emerald-600">®</sup></span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden xl:flex items-center justify-center gap-2 xl:gap-3 2xl:gap-5 flex-1 px-2">
+            <nav className="hidden xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-5 flex-1 px-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
-                  className={`text-[13px] 2xl:text-sm font-medium whitespace-nowrap transition-colors hover:text-gray-900 ${
+                  className={`text-[11px] xl:text-[12px] 2xl:text-[13.5px] tracking-tight font-medium whitespace-nowrap transition-colors hover:text-gray-900 ${
                     location.pathname === link.href ? "text-gray-900" : "text-gray-600"
                   }`}
                 >
@@ -63,19 +63,19 @@ export const Header = memo(function Header() {
             </nav>
 
             {/* Desktop Auth */}
-            <div className="hidden md:flex items-center gap-4 shrink-0">
+            <div className="hidden md:flex items-center gap-2 xl:gap-3 2xl:gap-4 shrink-0">
               {isSignedIn && user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-3 pl-2 pr-5 py-1.5 rounded-full bg-[#f8f9fb] border border-gray-100 shadow-sm hover:shadow-md hover:bg-white transition-all focus:outline-none">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center text-white shadow-sm overflow-hidden">
+                    <button className="flex items-center gap-2 xl:gap-0 2xl:gap-3 pl-1 pr-2 xl:pr-1 2xl:pr-5 py-1 rounded-full bg-[#f8f9fb] border border-gray-100 shadow-sm hover:shadow-md hover:bg-white transition-all focus:outline-none">
+                      <div className="h-8 w-8 md:h-9 md:w-9 xl:h-8 xl:w-8 2xl:h-9 2xl:w-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center text-white shadow-sm overflow-hidden">
                         {user.photoURL ? (
                           <img src={user.photoURL} alt="Profile" className="h-full w-full object-cover" />
                         ) : (
-                          <User className="h-5 w-5 fill-current" />
+                          <User className="h-4 w-4 md:h-5 md:w-5 fill-current" />
                         )}
                       </div>
-                      <span className="text-[15px] font-semibold text-gray-800 tracking-wide">
+                      <span className="hidden md:inline-block xl:hidden 2xl:inline-block text-[13px] 2xl:text-[15px] font-semibold text-gray-800 tracking-wide ml-2 2xl:ml-0">
                         {(user.displayName || user.email?.split('@')[0] || 'USER').toUpperCase()}
                       </span>
                     </button>
@@ -97,7 +97,7 @@ export const Header = memo(function Header() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-full px-6 py-2 text-sm font-medium" asChild>
+                <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-full px-4 py-1.5 xl:px-3 xl:text-[11px] 2xl:px-6 2xl:py-2 2xl:text-sm font-medium" asChild>
                   <Link to="/auth?tab=signin">Begin Journey</Link>
                 </Button>
               )}
