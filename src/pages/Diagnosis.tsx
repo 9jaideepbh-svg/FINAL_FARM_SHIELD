@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { uploadToCloudinary, fileToBase64 } from "@/lib/cloudinary";
 import { saveDiagnosisToFirestore, type DiagnosisHistoryRecord } from "@/lib/diagnosisHistory";
@@ -55,7 +55,8 @@ const PIPELINE_STEPS: PipelineStep[] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Diagnosis() {
-  const { user, isLoaded: authLoaded } = useUser();
+  const { user, loading: authLoading } = useAuth();
+  const authLoaded = !authLoading;
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -90,10 +91,10 @@ export default function Diagnosis() {
   }, [mouseX, mouseY]);
 
   useEffect(() => {
-    if (authLoaded && !user) {
+    if (!authLoading && !user) {
       navigate("/auth");
     }
-  }, [user, authLoaded, navigate]);
+  }, [user, authLoading, navigate]);
 
   const handleDownloadPDF = async () => {
     if (!result || !user) return;
@@ -102,7 +103,7 @@ export default function Diagnosis() {
       // Map active result & image into the DiagnosisHistoryRecord shape
       const record: Partial<DiagnosisHistoryRecord> = {
         id: "active-session",
-        userId: user.id,
+        userId: user.uid,
         imageUrl: enhancedImageUrl ?? cloudinaryImageUrl ?? previewUrl ?? "",
         plantName: result.plantName ?? result.plantIdentification?.commonName ?? "Unknown Plant",
         scientificName: result.plantIdentification?.scientificName ?? "",
@@ -236,7 +237,7 @@ export default function Diagnosis() {
 
       // ── Step 4: Save to Firestore ─────────────────────────────────────────
       markStep("saving");
-      await saveDiagnosisToFirestore(user.id, imageUrl, sanitized);
+      await saveDiagnosisToFirestore(user.uid, imageUrl, sanitized);
       completeStep("saving");
 
       setResult(sanitized);

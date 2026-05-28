@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { m, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import LightRays from "@/components/home/LightRays";
 import SplashCursor from "@/components/home/SplashCursor";
 import { VoiceNavigation } from "@/components/voice/VoiceNavigation";
@@ -245,8 +245,8 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 // Main Page Component
 // ==========================================
 export default function Index() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { user, loading, signOut } = useAuth();
+  const isLoaded = !loading;
   const navigate = useNavigate();
   const [preloaderActive, setPreloaderActive] = useState(() => {
     return !sessionStorage.getItem("hasShownPreloader");
@@ -363,19 +363,19 @@ export default function Index() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex items-center gap-2 bg-white/45 border border-white/60 shadow-sm hover:shadow-md hover:bg-white/60 transition-all duration-300 rounded-full py-1 pl-1 pr-3 backdrop-blur-[6px] cursor-pointer focus:outline-none select-none">
-                        {user.imageUrl ? (
+                        {user.photoURL ? (
                           <img 
-                            src={user.imageUrl} 
+                            src={user.photoURL} 
                             alt="User Avatar" 
                             className="w-7 h-7 rounded-full border border-black/10"
                           />
                         ) : (
                           <div className="w-7 h-7 rounded-full bg-emerald-600/25 flex items-center justify-center text-[10px] font-bold text-emerald-800">
-                            {user.firstName?.charAt(0) || "F"}
+                            {(user.displayName || user.email || "F").charAt(0).toUpperCase()}
                           </div>
                         )}
                         <span className="text-xs font-semibold text-black/85">
-                          {user.firstName || "Farmer"}
+                          {user.displayName?.split(" ")[0] || "Farmer"}
                         </span>
                       </button>
                     </DropdownMenuTrigger>

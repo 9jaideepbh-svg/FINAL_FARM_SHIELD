@@ -2,7 +2,7 @@ import { useState, memo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, History, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import GlassSurface from "@/components/GlassSurface";
 import {
   DropdownMenu,
@@ -26,8 +26,8 @@ const navLinks = [
 
 export const Header = memo(function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, isSignedIn } = useUser();
-  const { signOut } = useClerk();
+  const { user, loading, signOut } = useAuth();
+  const isSignedIn = !loading && !!user;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -69,14 +69,14 @@ export const Header = memo(function Header() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-3 pl-2 pr-5 py-1.5 rounded-full bg-[#f8f9fb] border border-gray-100 shadow-sm hover:shadow-md hover:bg-white transition-all focus:outline-none">
                       <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 flex items-center justify-center text-white shadow-sm overflow-hidden">
-                        {user.hasImage ? (
-                          <img src={user.imageUrl} alt="Profile" className="h-full w-full object-cover" />
+                        {user.photoURL ? (
+                          <img src={user.photoURL} alt="Profile" className="h-full w-full object-cover" />
                         ) : (
                           <User className="h-5 w-5 fill-current" />
                         )}
                       </div>
                       <span className="text-[15px] font-semibold text-gray-800 tracking-wide">
-                        {user.fullName?.toUpperCase() || user.primaryEmailAddress?.emailAddress?.split('@')[0].toUpperCase() || 'USER'}
+                        {(user.displayName || user.email?.split('@')[0] || 'USER').toUpperCase()}
                       </span>
                     </button>
                   </DropdownMenuTrigger>

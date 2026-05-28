@@ -41,7 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   fetchDiagnosisHistory,
@@ -72,7 +72,8 @@ function severityBadge(severity: string) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function History() {
-  const { user, isLoaded: authLoaded } = useUser();
+  const { user, loading: authLoading } = useAuth();
+  const authLoaded = !authLoading;
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -88,8 +89,8 @@ export default function History() {
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoaded && !user) navigate("/auth");
-  }, [user, authLoaded, navigate]);
+    if (!authLoading && !user) navigate("/auth");
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) loadHistory();
@@ -99,7 +100,7 @@ export default function History() {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await fetchDiagnosisHistory(user.id);
+      const data = await fetchDiagnosisHistory(user.uid);
       setRecords(data);
     } catch (err) {
       console.error("Failed to load history:", err);

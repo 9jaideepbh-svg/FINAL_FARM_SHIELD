@@ -1,17 +1,16 @@
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 /**
  * useAuth — thin adapter so existing pages that call useAuth() keep working.
- * Internally powered by Clerk; no Supabase auth involved.
+ * Internally powered by Firebase Auth.
  */
 export function useAuth() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { user, loading, signOut: firebaseSignOut } = useFirebaseAuth();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    await signOut();
+    await firebaseSignOut();
     toast({
       title: "Signed out",
       description: "You have been signed out successfully.",
@@ -19,12 +18,12 @@ export function useAuth() {
   };
 
   return {
-    /** Clerk user object (null when not signed in) */
-    user: isLoaded ? user ?? null : null,
-    /** Kept for interface compatibility — Clerk doesn't use Sessions */
+    /** Firebase user object (null when not signed in) */
+    user: loading ? null : user ?? null,
+    /** Kept for interface compatibility */
     session: null,
-    /** True while Clerk is still loading */
-    loading: !isLoaded,
+    /** True while Firebase is still loading auth state */
+    loading,
     signOut: handleSignOut,
   };
 }

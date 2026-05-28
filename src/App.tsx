@@ -12,8 +12,6 @@ import { LazyMotion, domAnimation } from "framer-motion";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import SSOCallback from "./pages/SSOCallback";
-
 // Lazy load non-critical pages
 const Diagnosis = lazy(() => import("./pages/Diagnosis"));
 const DiagnosisDetail = lazy(() => import("./pages/DiagnosisDetail"));
@@ -102,7 +100,6 @@ const App = () => (
               <Route path="/farmer-blog" element={<ProtectedRoute><FarmerBlog /></ProtectedRoute>} />
               <Route path="/krishi-setu/*" element={<ProtectedRoute><KrishiSetu /></ProtectedRoute>} />
               <Route path="/profile/*" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/sso-callback" element={<SSOCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
