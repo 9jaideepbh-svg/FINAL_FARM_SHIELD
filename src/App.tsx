@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { LazyMotion, domAnimation } from "framer-motion";
+import { Analytics } from "@vercel/analytics/react";
 
 // Keep static imports for critical pages
 import Index from "./pages/Index";
@@ -104,6 +105,7 @@ const App = () => (
             </Routes>
           </Suspense>
         </BrowserRouter>
+        <Analytics />
       </TooltipProvider>
     </QueryClientProvider>
   </LazyMotion>
